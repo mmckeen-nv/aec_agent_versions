@@ -234,7 +234,7 @@ import FreeCAD as App, MeshPart, json, hashlib, os, traceback
 doc=App.getDocument({document!r})
 if doc is None: raise RuntimeError('Working FreeCAD document is not open: '+{document!r})
 out={str(geometry)!r}; os.makedirs(out,exist_ok=True); entries=[]; failures=[]
-objects=sorted([o for o in doc.Objects if hasattr(o,'Shape') and not o.Shape.isNull() and getattr(o,'ArchitecturalRole','') != 'floor_plan_datum'],key=lambda o:o.Name)
+objects=sorted([o for o in doc.Objects if hasattr(o,'Shape') and hasattr(o,'StableId') and not o.Shape.isNull() and getattr(o,'ArchitecturalRole','') != 'floor_plan_datum'],key=lambda o:o.Name)
 for obj in objects:
     try:
         path=os.path.join(out,obj.Name+'.obj')
