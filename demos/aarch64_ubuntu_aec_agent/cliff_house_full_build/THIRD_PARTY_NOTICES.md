@@ -12,3 +12,5 @@ respective terms.
 - Rhino and Rhino MCP Platform: supplied under McNeel and package-author terms.
 - Cliff House `.3dm` and `.blend` demo assets: project-owner material; not covered by
   this repository's MIT license. Confirm redistribution rights before publishing a fork.
+- Original NVIDIA AEC CPTX demo workflow: `stwagstaff/2026_aec_cptx_demo`, used as the
+  authoritative source for the 13-phase Cliff House full-build port with employee authorization.

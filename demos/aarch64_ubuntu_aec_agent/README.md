@@ -7,7 +7,7 @@ AEC agent workflows validated for ARM64 Ubuntu on NVIDIA DGX Spark.
 | Workflow | Purpose | State |
 |---|---|---|
 | [`cliff_house_modifications`](cliff_house_modifications/) | Make controlled, reversible changes to the migrated Cliff House model | Validated baseline |
-| [`cliff_house_full_build`](cliff_house_full_build/) | Build the complete FreeCAD → Blender → ComfyUI pipeline | Baseline extracted; handoff refresh required |
+| [`cliff_house_full_build`](cliff_house_full_build/) | Build the complete FreeCAD → Blender → ComfyUI pipeline | [Porting playbook defined](cliff_house_full_build/PLAYBOOK.md) |
 
 Each workflow is self-contained. Enter the workflow directory before running its installers,
 scripts, or guides so relative paths resolve within that workflow.

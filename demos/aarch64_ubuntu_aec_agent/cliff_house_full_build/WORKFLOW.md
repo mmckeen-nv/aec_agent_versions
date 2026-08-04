@@ -11,6 +11,9 @@ Hermes OOBE
   → provenance and acceptance receipts
 ```
 
+The detailed port and delivery plan is in [PLAYBOOK.md](PLAYBOOK.md). The authoritative source
+workflow is NVIDIA's [`stwagstaff/2026_aec_cptx_demo`](https://github.com/stwagstaff/2026_aec_cptx_demo).
+
 ## Extracted implementation inventory
 
 | Stage | Included implementation | Receipt or invariant | State |
@@ -25,7 +28,7 @@ Hermes OOBE
 | ComfyUI processing | `scripts/comfyui_flux2_direct.py` | `COMFY_OUTPUT_PASS` | **Helper refresh required** |
 | Platform deployment | `platform/linux-dgx-spark/` | `LOCAL_AEC_DGX_CORE_PASS` | Validated |
 
-## Refresh required
+## Source refresh and port required
 
 The imported demo contains the major stages, but the inventory found two pieces that are not
 self-contained yet:
@@ -35,8 +38,10 @@ self-contained yet:
 2. `comfyui_flux2_direct.py` imports `comfyui_vp_stylize.py` from a separate
    `virtual_production_studio` demo that is not in this repository.
 
-Refresh those two original sources before declaring the full-build workflow complete. Do not
-silently substitute the prebuilt Blender master for the FreeCAD-to-Blender build stage.
+The authoritative original source is now identified. Its 13-phase prompt suite, Blender
+validation/render scripts, design brief, and ComfyUI phase should be imported with provenance
+and ported according to `PLAYBOOK.md`. Do not silently substitute the prebuilt Blender master
+for the FreeCAD-to-Blender build stage.
 
 ## Acceptance contract
 
