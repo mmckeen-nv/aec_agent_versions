@@ -28,20 +28,32 @@ workflow is NVIDIA's [`stwagstaff/2026_aec_cptx_demo`](https://github.com/stwags
 | ComfyUI processing | `scripts/comfyui_flux2_direct.py` | `COMFY_OUTPUT_PASS` | **Helper refresh required** |
 | Platform deployment | `platform/linux-dgx-spark/` | `LOCAL_AEC_DGX_CORE_PASS` | Validated |
 
+## Prompt-suite integration
+
+The complete upstream 00–13 prompt suite, Cliff House project brief, demo rules, and skills are
+now pinned under `upstream/stwagstaff-2026-aec-cptx-demo/`. Active phase wrappers under
+`system_prompts/` preserve the upstream intent and require the FreeCAD overrides in
+`system_prompts/PORT_FREECAD.md`.
+
+`AGENTS.md` recognizes “start the cliff house build,” loads the active phase state and original
+source prompt, and prohibits the hero/master/STEP/OBJ/Blend assets as construction shortcuts.
+The full-build workflow starts from an empty FreeCAD document.
+
 ## Source refresh and port required
 
 The imported demo contains the major stages, but the inventory found two pieces that are not
 self-contained yet:
 
-1. The Blender master is checked in, but the script that deterministically converts the
+1. The Blender master is checked in as a protected reference, but the script that
+   deterministically converts the
    audited FreeCAD document into that Blender scene is not present.
 2. `comfyui_flux2_direct.py` imports `comfyui_vp_stylize.py` from a separate
    `virtual_production_studio` demo that is not in this repository.
 
-The authoritative original source is now identified. Its 13-phase prompt suite, Blender
-validation/render scripts, design brief, and ComfyUI phase should be imported with provenance
-and ported according to `PLAYBOOK.md`. Do not silently substitute the prebuilt Blender master
-for the FreeCAD-to-Blender build stage.
+The authoritative original prompt suite and design brief are now vendored with provenance and
+activated through the FreeCAD adapter. The remaining Blender/ComfyUI implementation scripts
+must still be ported according to `PLAYBOOK.md`. Do not silently substitute the prebuilt
+Blender master for the FreeCAD-to-Blender build stage.
 
 ## Acceptance contract
 

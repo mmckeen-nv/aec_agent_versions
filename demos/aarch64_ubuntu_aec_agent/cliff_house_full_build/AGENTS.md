@@ -14,10 +14,18 @@ Treat any of these requests as an instruction to begin or resume this workflow:
 - "build the cliff house"
 - "continue the cliff house build"
 
-On a start request, do not ask the operator what "Cliff House" means. Read `WORKFLOW.md` and
-`PLAYBOOK.md`, identify the latest valid phase receipt under this workspace, and begin with
-Phase 00 (or resume the next incomplete phase). State the selected phase and perform its
-read-only preflight. Do not mutate geometry until the applicable review gate is approved.
+On a start request, do not ask the operator what "Cliff House" means. Read, in order:
+
+1. `skills/INDEX.md`
+2. `system_prompts/PORT_FREECAD.md`
+3. `hermes/DEMO_RULES.md`
+4. `hermes/phase_state.json`
+5. `projects/cliff_house_01/user_prompts/project_prompt.md`
+6. the active wrapper and its upstream source prompt
+
+Then begin Phase 00 (or resume the next incomplete phase represented by a valid receipt).
+State the selected phase and perform its read-only preflight. Do not mutate geometry until the
+applicable review gate is approved.
 
 ## Pipeline
 
@@ -30,13 +38,17 @@ The intended end-to-end workflow is:
 5. ComfyUI performs geometry-locked architectural post-processing.
 6. Each completed phase emits the receipt defined in `PLAYBOOK.md`.
 
-FreeCAD replaces Rhino in this workflow. Do not invoke Rhino or a Rhino MCP server.
+FreeCAD replaces Rhino in this workflow. Do not invoke Rhino or a Rhino MCP server. Phases
+00–06 must begin from an empty FreeCAD working document and build from the prompt suite. Never
+load or import the checked-in FreeCAD master, STEP source, hero Rhino file, pool OBJ files, or
+quick Blender master as a shortcut.
 
 ## Startup behavior
 
 For Phase 00:
 
-1. Read `WORKFLOW.md`, then the Phase 00 section of `PLAYBOOK.md`.
+1. Read the active skill index, FreeCAD port rules, project brief, and both the active and
+   upstream Phase 00 prompts.
 2. Confirm the current working directory is this `cliff_house_full_build` directory.
 3. Inspect MCP availability for FreeCAD and Blender without mutating either document.
 4. Check ComfyUI health at its configured local endpoint.
@@ -66,4 +78,3 @@ artifact is missing, report the exact blocker and stop at the appropriate gate.
 - `INSTALL GUIDE/` — operator deployment and validation instructions.
 - `scripts/` — currently included deterministic helpers.
 - `demo/cliff-house/` — protected reference assets and approved masters.
-

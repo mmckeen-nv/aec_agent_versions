@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "project": "cliff_house_01",
+  "current_phase": "00_session_startup",
+  "last_completed_phase": null,
+  "approved_gate": null,
+  "working_freecad_document": null,
+  "working_blender_document": null,
+  "receipts": [],
+  "source_model_policy": "build_from_empty_document",
+  "updated_at": null
+}
+
