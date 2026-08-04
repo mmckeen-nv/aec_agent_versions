@@ -44,19 +44,17 @@ agent:
   reasoning_effort: low
 
 mcp_servers:
-  rhino:
-    command: REPLACE_WITH_RHINO_MCP_ROUTER_EXE
-    args:
-      - --default-version
-      - '8'
+  freecad:
+    command: /home/REPLACE_WITH_USER/.local/bin/freecad-mcp
+    args: []
     connect_timeout: 75
     timeout: 180
   blender:
-    command: REPLACE_WITH_BLENDER_MCP_EXE
+    command: /home/REPLACE_WITH_USER/.local/bin/blender-mcp
     args: []
     connect_timeout: 30
     timeout: 180
     env:
-      BLENDER_HOST: localhost
+      BLENDER_HOST: 127.0.0.1
       BLENDER_PORT: '9876'
       DISABLE_TELEMETRY: 'true'
