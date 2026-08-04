@@ -196,21 +196,26 @@ for role,color in palette.items():
     mats[role]=m
 for entry in manifest['objects']:
     path=os.path.join(os.path.dirname({str(manifest_path)!r}),entry['geometry'])
-    before=set(bpy.data.objects); bpy.ops.wm.obj_import(filepath=path); created=[o for o in bpy.data.objects if o not in before]
+    before=set(bpy.data.objects); bpy.ops.wm.obj_import(filepath=path,forward_axis='NEGATIVE_Y',up_axis='Z'); created=[o for o in bpy.data.objects if o not in before]
     if not created: raise RuntimeError('OBJ import created no object: '+path)
     for i,obj in enumerate(created):
         obj.name=entry['name'] if i==0 else entry['name']+'_'+str(i)
         for k in ('stable_id','architectural_role','material_role','level','source_constraint'): obj[k]=entry[k]
         if obj.type=='MESH' and entry['material_role'] in mats: obj.data.materials.append(mats[entry['material_role']])
-# Ground plane and ocean are derived presentation geometry, not architecture.
-bpy.ops.mesh.primitive_plane_add(size=160, location=(5,0,-9.6)); ground=bpy.context.object; ground.name='PresentationGround'; ground.data.materials.append(mats['earth'])
-bpy.ops.mesh.primitive_plane_add(size=180, location=(-70,0,-8.8)); ocean=bpy.context.object; ocean.name='Ocean'; ocean.data.materials.append(mats['water'])
+# Derive presentation geometry and camera from imported Z-up architectural bounds.
+arch=[o for o in bpy.data.objects if o.type=='MESH']
+corners=[o.matrix_world @ Vector(c) for o in arch for c in o.bound_box]
+mins=Vector((min(v.x for v in corners),min(v.y for v in corners),min(v.z for v in corners)))
+maxs=Vector((max(v.x for v in corners),max(v.y for v in corners),max(v.z for v in corners)))
+center=(mins+maxs)*0.5; span=max(maxs.x-mins.x,maxs.y-mins.y,maxs.z-mins.z)
+bpy.ops.mesh.primitive_plane_add(size=span*4.5, location=(center.x,center.y,mins.z-0.15)); ground=bpy.context.object; ground.name='PresentationGround'; ground.data.materials.append(mats['earth'])
+bpy.ops.mesh.primitive_plane_add(size=span*5.5, location=(mins.x-span*2.3,center.y,mins.z+0.05)); ocean=bpy.context.object; ocean.name='Ocean'; ocean.data.materials.append(mats['water'])
 world=bpy.context.scene.world; world.color=(0.035,0.055,0.09)
 world.use_nodes=True; world.node_tree.nodes['Background'].inputs['Color'].default_value=(0.055,0.09,0.16,1); world.node_tree.nodes['Background'].inputs['Strength'].default_value=0.45
 bpy.ops.object.light_add(type='SUN', location=(20,-30,45)); sun=bpy.context.object; sun.name='Sun'; sun.data.energy=3.2; sun.rotation_euler=(math.radians(28),math.radians(-18),math.radians(-35))
-bpy.ops.object.light_add(type='AREA', location=(-12,-28,20)); area=bpy.context.object; area.name='WestFill'; area.data.energy=1400; area.data.shape='DISK'; area.data.size=18
-bpy.ops.object.camera_add(location=(-43,-38,22)); cam=bpy.context.object; cam.name='OceanHeroCamera'; bpy.context.scene.camera=cam
-target=Vector((5,-1,4.5)); cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler(); cam.data.lens=46
+bpy.ops.object.light_add(type='AREA', location=(mins.x-span,mins.y-span*0.7,maxs.z+span*0.5)); area=bpy.context.object; area.name='WestFill'; area.data.energy=1400; area.data.shape='DISK'; area.data.size=span*0.5
+bpy.ops.object.camera_add(location=(mins.x-span*1.25,mins.y-span*0.85,maxs.z+span*0.45)); cam=bpy.context.object; cam.name='OceanHeroCamera'; bpy.context.scene.camera=cam
+target=Vector((center.x,center.y,mins.z+(maxs.z-mins.z)*0.45)); cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler(); cam.data.lens=52
 scene=bpy.context.scene
 engines={{item.identifier for item in scene.render.bl_rna.properties['engine'].enum_items}}
 scene.render.engine='BLENDER_EEVEE_NEXT' if 'BLENDER_EEVEE_NEXT' in engines else 'BLENDER_EEVEE'
