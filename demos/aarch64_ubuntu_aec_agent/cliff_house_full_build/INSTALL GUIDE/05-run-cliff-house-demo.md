@@ -25,11 +25,10 @@ This registers only this directory as the `cliff-house-full-build` project, acti
 inside the matching Hermes profile, and installs a launcher that starts in this workspace.
 It does not choose an inference provider, copy credentials, or configure another demo.
 
-## Prepare application working documents
+## Prepare the applications
 
-1. Start FreeCAD and its MCP bridge. Do not overwrite `cliff_house_FREECAD_MASTER.FCStd`.
-2. Start Blender and BlenderMCP. Treat `cliff_house_QUICK_MASTER.blend` as a protected
-   reference, not as a substitute for the planned deterministic FreeCAD-to-Blender handoff.
+1. Start FreeCAD and its MCP bridge. Do not open or overwrite a master document.
+2. Start Blender and BlenderMCP. Do not open or import the protected Blender master.
 3. Keep all generated documents under ignored `work/` or `outputs/` directories.
 
 Never overwrite a file containing `HERO` or `MASTER`.
@@ -52,6 +51,10 @@ before the relevant review gate.
 
 After the inspection succeeds, use narrowly scoped prompts and approve geometry mutations
 only when the intended target is explicit.
+
+To run the saved deterministic test workflow directly, follow [RUN_WORKFLOW.md](../RUN_WORKFLOW.md).
+It builds from an empty FreeCAD document, creates the handoff manifest, assembles the Blender
+scene, and emits `FULL_BUILD_TEST_RENDER_PASS` when the render succeeds.
 
 ## Expected result
 

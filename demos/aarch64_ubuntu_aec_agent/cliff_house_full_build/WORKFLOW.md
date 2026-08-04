@@ -18,12 +18,11 @@ workflow is NVIDIA's [`stwagstaff/2026_aec_cptx_demo`](https://github.com/stwags
 
 | Stage | Included implementation | Receipt or invariant | State |
 |---|---|---|---|
-| FreeCAD source import | `scripts/import_step_to_freecad.py` | `FREECAD_STEP_IMPORT_PASS` | Present |
-| Pool preservation | `scripts/add_rhino_pool_to_freecad.py` | `FREECAD_POOL_IMPORT_PASS` | Present |
-| Geometry audit | `scripts/audit_freecad_geometry.py` | `FREECAD_GEOMETRY_AUDIT_PASS` | Present |
-| Persisted FreeCAD view | `scripts/prepare_freecad_view.py` | `FREECAD_VIEW_PREP_PASS` | Present |
-| FreeCAD → Blender handoff | Checked-in `cliff_house_QUICK_MASTER.blend` only | No deterministic export/build receipt | **Refresh required** |
-| Blender scene validation/render | `scripts/blender_cliff_quick.py` | `CLIFF_QUICK_OPEN_PASS`, `CLIFF_QUICK_RENDER_PASS` | Present |
+| Empty-document FreeCAD build | `scripts/run_full_build_mcp.py` | Per-object phase receipts | **Validated** |
+| Pool construction | `scripts/run_full_build_mcp.py` | `PHASE_06_OBJECT_PASS` | **Validated** |
+| Geometry audit and metadata | Generated manifest plus receipts | Named roles, levels, constraints, and hashes | **Validated** |
+| FreeCAD → Blender handoff | Explicit tessellation plus `scene_manifest.json` | Hashed geometry bundle | **Validated** |
+| Blender scene assembly/render | `scripts/run_full_build_mcp.py` | `FULL_BUILD_TEST_RENDER_PASS` | **Validated** |
 | Blender → ComfyUI handoff | Rendered PNG | Source hash captured | Present |
 | ComfyUI processing | `scripts/comfyui_flux2_direct.py` | `COMFY_OUTPUT_PASS` | **Helper refresh required** |
 | Platform deployment | `platform/linux-dgx-spark/` | `LOCAL_AEC_DGX_CORE_PASS` | Validated |
@@ -39,21 +38,16 @@ now pinned under `upstream/stwagstaff-2026-aec-cptx-demo/`. Active phase wrapper
 source prompt, and prohibits the hero/master/STEP/OBJ/Blend assets as construction shortcuts.
 The full-build workflow starts from an empty FreeCAD document.
 
-## Source refresh and port required
+## Remaining ComfyUI port
 
-The imported demo contains the major stages, but the inventory found two pieces that are not
-self-contained yet:
-
-1. The Blender master is checked in as a protected reference, but the script that
-   deterministically converts the
-   audited FreeCAD document into that Blender scene is not present.
-2. `comfyui_flux2_direct.py` imports `comfyui_vp_stylize.py` from a separate
+The visible MCP runner now provides the deterministic empty-document FreeCAD build and
+FreeCAD-to-Blender handoff without using protected reference assets. One downstream piece is not
+self-contained yet: `comfyui_flux2_direct.py` imports `comfyui_vp_stylize.py` from a separate
    `virtual_production_studio` demo that is not in this repository.
 
-The authoritative original prompt suite and design brief are now vendored with provenance and
-activated through the FreeCAD adapter. The remaining Blender/ComfyUI implementation scripts
-must still be ported according to `PLAYBOOK.md`. Do not silently substitute the prebuilt
-Blender master for the FreeCAD-to-Blender build stage.
+The authoritative original prompt suite and design brief are vendored with provenance and
+activated through the FreeCAD adapter. The remaining ComfyUI implementation must be ported
+according to `PLAYBOOK.md`. Do not silently substitute the prebuilt Blender master for any stage.
 
 ## Acceptance contract
 
