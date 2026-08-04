@@ -1,4 +1,4 @@
-# Local AEC Agent Cloud Endpoint installation guide
+# aarch64_ubuntu_aec_agent installation guide
 
 This page covers the Windows/Rhino deployment. For NVIDIA DGX Spark and FreeCAD, use the
 [Linux DGX Spark playbook](LINUX%20DGX%20SPARK/README.md).
