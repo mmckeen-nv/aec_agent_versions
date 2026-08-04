@@ -188,7 +188,9 @@ for role,color in palette.items():
     bs.inputs['Roughness'].default_value=0.45
     if role in ('glass','water'):
         bs.inputs['Transmission Weight'].default_value=0.75 if role=='glass' else 0.35
-        bs.inputs['Alpha'].default_value=color[3]; m.surface_render_method='DITHERED'
+        bs.inputs['Alpha'].default_value=color[3]
+        if hasattr(m,'surface_render_method'): m.surface_render_method='DITHERED'
+        elif hasattr(m,'blend_method'): m.blend_method='BLEND'
     if role=='bronze': bs.inputs['Metallic'].default_value=0.75
     mats[role]=m
 for entry in manifest['objects']:
