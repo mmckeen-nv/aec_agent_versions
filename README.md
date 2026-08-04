@@ -8,7 +8,7 @@ assets, validation instructions, and third-party notices.
 
 | Demo | Platforms | AEC applications | Status |
 |---|---|---|---|
-| [Local AEC Agent Cloud Endpoint](demos/local-aec-agent-cloud-endpoint/) | Windows, NVIDIA DGX Spark | Rhino 3D, FreeCAD, Blender, ComfyUI | DGX Spark deployment validated |
+| [`aarch64_ubuntu_aec_agent`](demos/aarch64_ubuntu_aec_agent/) | NVIDIA DGX Spark / Ubuntu ARM64 | FreeCAD, Blender, ComfyUI | DGX Spark deployment validated |
 
 ## Repository conventions
 
