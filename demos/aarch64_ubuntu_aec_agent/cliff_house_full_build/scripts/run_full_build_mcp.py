@@ -221,6 +221,43 @@ print('FREECAD_BLENDER_IMPORT_PASS objects='+str(len(manifest['objects']))); pri
     return blend_path, render_path
 
 
+async def freecad_export_existing(run_dir: Path, document: str) -> tuple[Path, Path]:
+    """Resume a completed visible FreeCAD build and create its deterministic mesh bundle."""
+    params = StdioServerParameters(command=str(Path.home() / ".local/bin/freecad-mcp"), args=[])
+    fcstd = run_dir / "freecad" / "cliff_house_01_working.FCStd"
+    bundle = run_dir / "freecad_blender_bundle"
+    geometry = bundle / "geometry"
+    geometry.mkdir(parents=True, exist_ok=True)
+    manifest_path = bundle / "scene_manifest.json"
+    code = f"""
+import FreeCAD as App, MeshPart, json, hashlib, os, traceback
+doc=App.getDocument({document!r})
+if doc is None: raise RuntimeError('Working FreeCAD document is not open: '+{document!r})
+out={str(geometry)!r}; os.makedirs(out,exist_ok=True); entries=[]; failures=[]
+objects=sorted([o for o in doc.Objects if hasattr(o,'Shape') and not o.Shape.isNull() and getattr(o,'ArchitecturalRole','') != 'floor_plan_datum'],key=lambda o:o.Name)
+for obj in objects:
+    try:
+        path=os.path.join(out,obj.Name+'.obj')
+        mesh=MeshPart.meshFromShape(Shape=obj.Shape,LinearDeflection=0.08,AngularDeflection=0.35,Relative=False)
+        if mesh.CountFacets <= 0: raise RuntimeError('zero facets')
+        mesh.write(path); h=hashlib.sha256(open(path,'rb').read()).hexdigest(); bb=obj.Shape.BoundBox
+        entries.append({{'stable_id':obj.StableId,'name':obj.Name,'label':obj.Label,'architectural_role':obj.ArchitecturalRole,'material_role':obj.MaterialRole,'level':obj.Level,'source_constraint':obj.SourceConstraint,'geometry':'geometry/'+obj.Name+'.obj','sha256':h,'bounds':[bb.XMin,bb.YMin,bb.ZMin,bb.XMax,bb.YMax,bb.ZMax],'facets':mesh.CountFacets}})
+    except Exception as exc: failures.append(obj.Name+': '+str(exc))
+if failures: raise RuntimeError('Mesh export failures: '+' | '.join(failures))
+manifest={{'schema_version':1,'units':'m','source_document':{document!r},'source_policy':'build_from_empty_document','objects':entries}}
+mp={str(manifest_path)!r}; open(mp,'w').write(json.dumps(manifest,indent=2))
+open({str(bundle / 'SHA256SUMS.txt')!r},'w').write(''.join(e['sha256']+'  '+e['geometry']+'\\n' for e in entries))
+doc.saveAs({str(fcstd)!r}); print('FREECAD_BLENDER_EXPORT_PASS objects='+str(len(entries)))
+"""
+    async with stdio_client(params) as (reader, writer):
+        async with ClientSession(reader, writer) as session:
+            await session.initialize()
+            result = await call(session, "execute_code", {"code": code})
+    if not manifest_path.is_file():
+        raise RuntimeError(f"FreeCAD export returned without manifest: {result}")
+    return fcstd, manifest_path
+
+
 def write_receipts(root: Path, run_dir: Path, fcstd: Path, manifest: Path, blend: Path, render: Path) -> None:
     receipt_dir = run_dir / "receipts"
     receipt_dir.mkdir(parents=True, exist_ok=True)
@@ -252,12 +289,16 @@ async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--resume", action="store_true", help="Resume export/render from the open working FreeCAD document")
     args = parser.parse_args()
     root = args.root.resolve()
     run_dir = root / "work" / args.run_id
-    run_dir.mkdir(parents=True, exist_ok=False)
+    run_dir.mkdir(parents=True, exist_ok=args.resume)
     document = "CliffHouseBuild_" + args.run_id.replace("-", "_")
-    fcstd, manifest = await freecad_build(root, run_dir, document)
+    if args.resume:
+        fcstd, manifest = await freecad_export_existing(run_dir, document)
+    else:
+        fcstd, manifest = await freecad_build(root, run_dir, document)
     blend, render = await blender_build(run_dir, manifest)
     write_receipts(root, run_dir, fcstd, manifest, blend, render)
 
