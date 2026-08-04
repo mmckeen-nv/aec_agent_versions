@@ -1,5 +1,7 @@
 work/
 outputs/
+__pycache__/
+*.py[cod]
 projects/cliff_house_01/freecad_assets/
 projects/cliff_house_01/blender_assets/
 projects/cliff_house_01/comfy_source/
