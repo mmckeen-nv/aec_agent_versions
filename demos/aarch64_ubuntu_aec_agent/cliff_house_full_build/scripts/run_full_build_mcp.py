@@ -171,7 +171,8 @@ import bpy, json, math, os
 from mathutils import Vector
 manifest=json.load(open({str(manifest_path)!r}))
 names=set(o.name for o in bpy.data.objects)
-if names and names != {{'Cube','Camera','Light'}}:
+expected={{e['name'] for e in manifest['objects']}} | {{'PresentationGround','Ocean','Sun','WestFill','OceanHeroCamera'}}
+if names and names != {{'Cube','Camera','Light'}} and not names.issubset(expected):
     raise RuntimeError('Refusing to replace non-default Blender scene: '+','.join(sorted(names)))
 bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
 for datablocks in (bpy.data.meshes, bpy.data.curves, bpy.data.materials, bpy.data.cameras, bpy.data.lights):
@@ -210,7 +211,10 @@ bpy.ops.object.light_add(type='SUN', location=(20,-30,45)); sun=bpy.context.obje
 bpy.ops.object.light_add(type='AREA', location=(-12,-28,20)); area=bpy.context.object; area.name='WestFill'; area.data.energy=1400; area.data.shape='DISK'; area.data.size=18
 bpy.ops.object.camera_add(location=(-43,-38,22)); cam=bpy.context.object; cam.name='OceanHeroCamera'; bpy.context.scene.camera=cam
 target=Vector((5,-1,4.5)); cam.rotation_euler=(target-cam.location).to_track_quat('-Z','Y').to_euler(); cam.data.lens=46
-scene=bpy.context.scene; scene.render.engine='BLENDER_EEVEE_NEXT'; scene.render.resolution_x=1280; scene.render.resolution_y=720; scene.render.resolution_percentage=100
+scene=bpy.context.scene
+engines={{item.identifier for item in scene.render.bl_rna.properties['engine'].enum_items}}
+scene.render.engine='BLENDER_EEVEE_NEXT' if 'BLENDER_EEVEE_NEXT' in engines else 'BLENDER_EEVEE'
+scene.render.resolution_x=1280; scene.render.resolution_y=720; scene.render.resolution_percentage=100
 scene.render.image_settings.file_format='PNG'; scene.render.filepath={str(render_path)!r}; scene.render.film_transparent=False
 scene.render.image_settings.color_mode='RGBA'; scene.view_settings.look='AgX - Medium High Contrast'
 bpy.ops.wm.save_as_mainfile(filepath={str(blend_path)!r}); bpy.ops.render.render(write_still=True); bpy.ops.wm.save_as_mainfile(filepath={str(blend_path)!r})
