@@ -9,6 +9,7 @@ assets, validation instructions, and third-party notices.
 | Demo | Platforms | AEC applications | Status |
 |---|---|---|---|
 | [`aarch64_ubuntu_aec_agent`](demos/aarch64_ubuntu_aec_agent/) | NVIDIA DGX Spark / Ubuntu ARM64 | FreeCAD, Blender, ComfyUI | DGX Spark deployment validated |
+| [`aarch64_windows_aec_agent`](demos/aarch64_windows_aec_agent/) | Windows on ARM64 | Rhino 8, Blender, ComfyUI | OOBE-safe package validated locally |
 
 ## Repository conventions
 
