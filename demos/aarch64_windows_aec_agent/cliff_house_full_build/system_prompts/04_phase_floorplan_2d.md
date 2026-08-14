@@ -9,6 +9,9 @@
 
 ## Purpose
 
+For `cliff_house_02`, the three-level room program, level-prefixed names, hidden plan layers, and
+schematic-code note in `00d_golden_master_contract.md` are mandatory.
+
 Generate a fully annotated 2D floor plan in Rhino — room outlines, site
 features, labels — organised into a clean nested layer hierarchy.
 This plan serves as the drawing-board reference and camera-visible annotation

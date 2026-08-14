@@ -8,6 +8,9 @@
 
 ## Purpose
 
+For `cliff_house_02`, use the exact Phase 01 site geometry in
+`00d_golden_master_contract.md`; do not substitute adjustable defaults.
+
 Build the terrain surface, define lot boundaries, and establish the building pad
 and retaining curtain wall. Everything in this phase happens in Rhino. Blender
 receives the exported mesh for later phases.

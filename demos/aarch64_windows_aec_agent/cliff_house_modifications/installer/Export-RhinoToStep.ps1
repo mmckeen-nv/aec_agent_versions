@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $rhino = 'C:\Program Files\Rhino 8\System\Rhino.exe'
-$source = Join-Path $RepositoryRoot 'demo\cliff-house\cliff_house_HERO_RHINO_MODEL.3dm'
+$source = Join-Path $RepositoryRoot 'demo\cliff-house\cliff_house_GOLDEN_MASTER.3dm'
 $target = Join-Path $RepositoryRoot 'demo\cliff-house\cliff_house_FREECAD_SOURCE.step'
 $script = Join-Path $RepositoryRoot 'scripts\export_rhino_to_step.py'
 $receipt = Join-Path ([IO.Path]::GetTempPath()) 'local-aec-rhino-step.receipt'

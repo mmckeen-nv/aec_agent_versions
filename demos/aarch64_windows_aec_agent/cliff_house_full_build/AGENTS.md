@@ -14,7 +14,8 @@ Treat “start the cliff house build,” “run the full build,” “build the 
 3. `hermes/DEMO_RULES.md`
 4. `hermes/phase_state.json`
 5. `projects/cliff_house_02/user_prompts/project_prompt.md`
-6. the active phase prompt under `system_prompts/`
+6. `system_prompts/00d_golden_master_contract.md`
+7. the active phase prompt under `system_prompts/`
 
 Begin Phase 00 or resume the next incomplete phase represented by a valid receipt. State the
 selected phase and perform its read-only preflight. Do not mutate geometry before its review gate.
@@ -29,6 +30,8 @@ selected phase and perform its read-only preflight. Do not mutate geometry befor
 
 Never load a completed hero Rhino file, quick Blender master, or another completed model as a
 full-build shortcut. The source-curve `base_model.3dm` is required input, not a completed model.
+The golden contract is normative: generic examples and adjustable defaults in upstream prompts
+must resolve to its exact dimensions, names, layer paths, program, and acceptance counts.
 
 ## Rhino execution surface
 

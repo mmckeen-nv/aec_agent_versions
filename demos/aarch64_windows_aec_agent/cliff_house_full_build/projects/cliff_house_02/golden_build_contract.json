@@ -1,0 +1,37 @@
+{
+  "schema": "swagstaff-cliff-house/1.0",
+  "source_sha256": "DDACAC2BA0CEA8DF75A1B02B9214C64BBCBF4B5D214E60C67DAC94A32E7272D0",
+  "units": "Meters",
+  "absolute_tolerance": 0.001,
+  "source_objects": 16,
+  "authored_objects": 191,
+  "total_objects": 207,
+  "total_layers": 42,
+  "root_counts": {
+    "building_site_v3": 7,
+    "massing_v3": 11,
+    "AEC_HOUSE": 115,
+    "FLOORPLAN": 58
+  },
+  "required_names": [
+    "SITE_TERRAIN_NURBS",
+    "SITE_COMBINED_PAD",
+    "L1_EAST",
+    "L2_WEST",
+    "L3_MAIN",
+    "L3_ROOF_SLAB",
+    "INFINITY_POOL_WATER",
+    "INFINITY_POOL_BRONZE_EDGE",
+    "ENTRY_PIVOT_DOOR",
+    "GARAGE_DOOR_01",
+    "GARAGE_DOOR_02",
+    "L1_LIVING_LABEL",
+    "L2_BEDROOM_2_LABEL",
+    "L3_PRIMARY_BEDROOM_LABEL"
+  ],
+  "document_strings": {
+    "AEC_SCHEMA": "swagstaff-cliff-house/1.0",
+    "AEC_SOURCE": "stwagstaff/2026_aec_cptx_demo base_model.3dm",
+    "AEC_BUILD_METHOD": "deterministic-from-scratch"
+  }
+}

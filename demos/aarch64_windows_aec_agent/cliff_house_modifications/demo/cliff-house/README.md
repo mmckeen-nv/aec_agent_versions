@@ -1,6 +1,7 @@
 # Protected quick-demo masters
 
-- `cliff_house_HERO_RHINO_MODEL.3dm` is the Rhino source master.
+- `cliff_house_GOLDEN_MASTER.3dm` is the protected Rhino source master built
+  from the pinned Swagstaff base scene.
 - `cliff_house_QUICK_MASTER.blend` is the Blender quick-render master.
 
 The Rhino master is numerically modeled in metres and its document unit system is deliberately
@@ -9,4 +10,4 @@ absolute tolerance is `0.001 m` (1 mm). Its separated floor plans are schematic 
 note requiring verification of structure, egress, accessibility, and local code.
 
 Never edit these files in place. Copy them into ignored `work/<run-id>/` storage, remove
-`HERO`/`MASTER` from the working filename, and operate only on the copy.
+`GOLDEN`/`MASTER` from the working filename, and operate only on the copy.

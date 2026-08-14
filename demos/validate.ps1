@@ -77,7 +77,10 @@ foreach ($required in @(
   'UPSTREAM.md',
   'config\hermes\config.template.yaml',
   'installer\Deploy-HermesProfile.ps1',
-  'projects\cliff_house_02\user_prompts\project_prompt.md'
+  'projects\cliff_house_02\user_prompts\project_prompt.md',
+  'projects\cliff_house_02\golden_build_contract.json',
+  'system_prompts\00d_golden_master_contract.md',
+  'scripts\validate_golden_contract.py'
 )) {
   if (-not (Test-Path -LiteralPath (Join-Path $windowsFull $required))) {
     $failures.Add("Windows full build: missing $required")
@@ -110,8 +113,8 @@ $quickContracts = @(
   @{
     Name = 'Windows quick modifications'
     Root = Join-Path $demosRoot 'aarch64_windows_aec_agent\cliff_house_modifications'
-    Master = 'demo\cliff-house\cliff_house_HERO_RHINO_MODEL.3dm'
-    Hash = 'ECB9AFA62905B4E20BED2697ED19E47EB76A561A5058358A0326548C2D915DD5'
+    Master = 'demo\cliff-house\cliff_house_GOLDEN_MASTER.3dm'
+    Hash = 'D7DB42D78B360C66D94E1E034C201EDD98EFF8F63F35B19C7995E7D1B63F4F7C'
     Required = @('AGENTS.md', 'config\hermes\config.template.yaml', 'installer\Deploy-HermesProfile.ps1', 'installer\New-WorkingCopy.ps1')
   },
   @{

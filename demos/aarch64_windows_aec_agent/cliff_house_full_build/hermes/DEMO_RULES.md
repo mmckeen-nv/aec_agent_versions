@@ -82,8 +82,8 @@ reference geometry, or intentionally pausing between steps of model building. Do
 
 ## Square Footage Calculation
 
-- Treat `doc.ModelUnitSystem` as authoritative. The distributed public source model is stored in
-  millimetres even though the inventory below is expressed in metres; normalize before building.
+- Treat `doc.ModelUnitSystem` as authoritative. The pinned public source and golden contract both
+  use metres; fail preflight instead of silently scaling if the active document differs.
 - 1 meter = 3.28084 feet, so 1 m² = 10.7639 ft²
 - Use bounding box footprint (w × d) for quick estimates
 - For precise floor area: isolate bottom face of each Brep solid and compute area
@@ -91,7 +91,13 @@ reference geometry, or intentionally pausing between steps of model building. Do
 
 ---
 
-## What Has Been Built
+## Golden output contract
+
+Read `system_prompts/00d_golden_master_contract.md` before every Rhino phase. Its exact names,
+bounds, program, object counts, and semantic layers override generic examples below. The
+machine-readable mirror is `projects/cliff_house_02/golden_build_contract.json`.
+
+## What Must Be Built
 **building_site_v3** (complete):
 - terrain (NURBS surface, X=-15→25, Y=-22→20, Z=-8→0)
 - combined_pad (X=1.5→17, Y=-16.9→14, Z=-0.5→0.25)
