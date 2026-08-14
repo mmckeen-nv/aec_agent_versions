@@ -23,8 +23,10 @@ For every modification request, use exactly this progression:
    layer counts, and type counts without dumping every object. Then make at most one
    `mode=objects` query with a name/layer/type/ID selector and `limit<=25`. Confirm revision,
    units, bounds, and stable target IDs before mutation.
-2. At most one `get_viewport_image` before mutation, only when geometry relationships remain
-   ambiguous after the audit.
+2. For visual inspection, call `rhino_viewport_zoom_extents`, then use
+   `rhino_viewport_set_target` and bounded `rhino_viewport_orbit` moves followed by
+   `rhino_viewport_capture`. These tools visibly change the active Rhino viewport and prove each
+   inspected area. Do not substitute computer use. Keep inspection to the minimum useful views.
 3. Call `rhino_apply_operations` once with the exact scene revision, one unique stable
    `idempotency_key`, the active working-document path as `checkpoint_path`, and the smallest typed
    operation batch. Do not generate RhinoCommon for routine geometry. The sidecar validates the
@@ -33,7 +35,7 @@ For every modification request, use exactly this progression:
 4. Require `receipt.verification.status=verified`; the sidecar automatically performs the
    independent before/after scene-delta proof. Make one focused post-change object query only when
    a task-specific spatial or naming assertion is not already present in the receipt.
-5. One `get_viewport_image`, then `save_doc`, report the evidence, and stop.
+5. One final `rhino_viewport_capture`, then `save_doc`, report the evidence, and stop.
 
 Web search is available for building, zoning, accessibility, fire, safety, product, and other
 research required by the demo. Prefer primary and governing sources when accuracy matters, cite
