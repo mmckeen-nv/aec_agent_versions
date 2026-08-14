@@ -1,34 +1,32 @@
-# Cliff House full build — Windows ARM64
+# Cliff House full-build demo — Windows on ARM
 
-An easy-to-deploy Hermes adaptation of the original phase-driven NVIDIA AEC workflow for Rhino 8,
-Blender, and ComfyUI on Windows ARM64. It is isolated from the quick-modification demo and begins
-from Wagstaff's source-curve `base_model.3dm`; it never substitutes a completed hero model.
+This is the phase-driven construction demo adapted from the original Wagstaff workflow. It begins
+with the supplied source curves and builds the house in Rhino; it never substitutes the completed
+modification-demo model.
 
-```text
-User-selected inference <-> Hermes Desktop (after OOBE)
-                            |-> Rhino MCP <-> Rhino 8
-                            |-> Blender MCP <-> Blender
-                            \-> ComfyUI on NVIDIA CUDA
-```
+## Start
 
-## Start here
+Install from the parent directory by following [../DEPLOY.md](../DEPLOY.md), then:
 
-1. Complete Hermes OOBE and create a dedicated profile.
-2. Deploy this package into it:
+1. close other Rhino demo sessions;
+2. double-click **AEC Full Build**;
+3. run `AECMCPStart` in Rhino if the launcher reports that port `1999` is offline; and
+4. tell Hermes: `Start the cliff house full build.`
 
-   ```powershell
-   .\installer\Deploy-HermesProfile.ps1 -Profile cliff-house-full-build-windows -RhinoPort 1999
-   ```
+The shortcut selects the isolated `cliff-house-full-build-windows` profile and opens Hermes
+Desktop. The workflow reads:
 
-3. Start Rhino, Blender, ComfyUI, and their loopback MCP bridges.
-4. Run `.\installer\Test-LocalAEC.ps1 -Profile cliff-house-full-build-windows`.
-5. Tell Hermes: `Start the cliff house build.`
+- `projects/cliff_house_02/rhino_assets/base_model.3dm` — required source curves;
+- `projects/cliff_house_02/user_prompts/project_prompt.md` — original design program;
+- `projects/cliff_house_02/golden_build_contract.json` — machine-checkable target contract; and
+- `system_prompts/` and `PLAYBOOK.md` — phase gates and execution rules.
 
-Hermes reads `AGENTS.md`, `projects/cliff_house_02/user_prompts/project_prompt.md`, phase state,
-skills, and the active prompt under `system_prompts/`. The Rhino source file is
-`projects/cliff_house_02/rhino_assets/base_model.3dm`. Generated files belong under ignored
-`work/` or `outputs/` directories.
+Generated files belong under ignored `work/` or `outputs/` directories. The completed golden
+master in the modification package is comparison-only and must never be used as full-build input.
 
-The repository contains a credential-free NVIDIA Responses API template. Deployment never writes
-an API key: set `NVIDIA_API_KEY` in the profile environment or through Hermes' secret UI. Provider,
-model, endpoint, context length, and Rhino port remain command-line parameters.
+The typed operation catalog is preferred. This profile alone retains a bounded transactional
+Python escape hatch for construction operations that the typed catalog cannot express; every such
+mutation still requires checkpointing and independent verification.
+
+For requirements, deployment verification, and repair, use the parent
+[deployment guide](../DEPLOY.md).

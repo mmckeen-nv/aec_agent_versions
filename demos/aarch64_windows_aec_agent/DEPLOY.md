@@ -1,25 +1,28 @@
-# AEC demos — Windows deployment and test guide
+# Windows on ARM deployment and test guide
+
+This is the operator guide for the two Cliff House demos. A successful installation ends with two
+desktop shortcuts and two real Hermes profile directories—one for each workflow.
 
 ## Requirements
 
+Required for both demos:
+
 - Windows 11 on ARM64.
-- Rhino 8, activated and able to open a document.
-- The pinned runtime installs its bundled hardened AEC RhinoMCP plug-in automatically. It uses `AECMCPStart` and never exposes the upstream raw tool catalogue to Hermes.
-- Hermes Desktop installed. Both demo shortcuts open the graphical consumer UI; no terminal or
-  Hermes TUI is part of the demo experience.
-- Git and Python 3.11 or newer. The deployer installs the pinned Daystrom DML memory harness and
-  the pinned `hermes-aec-runtime` typed Rhino sidecar into
-  Hermes' local integration directory; no Ollama, embedding model, CMA, or extra inference model
-  is required.
-- NVIDIA inference API key with access to `switchyard/openai/gpt-5.6-sol`.
-- Internet access for inference requests and the first Daystrom DML installation.
+- Rhino 8, activated and able to open a `.3dm` document.
+- Hermes Desktop installed and opened at least once.
+- Python 3.11 or newer and Git available on `PATH`.
+- Internet access for first installation and inference.
+- An NVIDIA inference API key with access to `switchyard/openai/gpt-5.6-sol`.
 
-Blender, Blender MCP, ComfyUI, and NVIDIA GPU drivers are needed only for later rendering phases,
-not for the first Rhino construction or modification test.
+Blender, Blender MCP, ComfyUI, and NVIDIA GPU drivers are optional for the initial Rhino test. They
+are required only for later visualization and rendering phases.
 
-## Deploy once
+The installer supplies the hardened AEC RhinoMCP plug-in. Do **not** separately install or register
+the upstream RhinoMCP server in Hermes. Hermes sees only the typed AEC sidecar tools.
 
-1. Close Rhino for the initial install. The deployment script installs the plug-in and runtime.
+## Install
+
+1. Close Rhino and Hermes Desktop.
 2. Open PowerShell in this directory.
 3. Run:
 
@@ -28,85 +31,93 @@ not for the first Rhino construction or modification test.
    .\Deploy-AECDemos.ps1
    ```
 
-The installer uses RhinoMCP's structured transport on loopback port `1999`, installs the pinned DML runtime and Hermes AEC runtime, seeds a small procedural-memory
-pack into a separate store for each demo, deploys two isolated Hermes profiles, securely asks for
-the API key only if necessary, and creates **AEC Full Build** and **AEC House Modification** on the Desktop.
-Each shortcut runs its setup invisibly and opens the Hermes Desktop UI pinned to the correct profile.
+4. If prompted, paste the NVIDIA API key. It is written only to the two local demo profile
+   environments and is never added to Git.
+5. Wait for `AEC_DEMOS_DEPLOYED`.
 
-After installation, restart Rhino once and run `AECMCPStart` on port `1999`. Hermes only sees the typed sidecar tools; it cannot call RhinoMCP or raw Rhino
-scripts directly.
+The installer is safe to rerun. It installs the runtime version pinned in
+`../hermes-aec-runtime.version`, installs the bundled Rhino plug-in, configures loopback port
+`1999`, seeds separate workflow-memory stores, and creates:
 
-Memory retrieval is automatic. The operator does not need to mention DML. The seed contains tested
-application-command sequences and validation/recovery rules—not transcripts or a verbatim skill.
+- **AEC House Modification**
+- **AEC Full Build**
 
-## Verify deployment
+Existing managed configurations and plug-ins are backed up before replacement.
+
+## Verify
+
+Run:
 
 ```powershell
 .\Test-AECDeployment.ps1
 ```
 
-The final line should be `AEC_DEPLOYMENT_PASS`. A stopped Rhino MCP listener is reported as a
-warning; start it before launching a demo.
+The final line must be:
 
-## Test 1 — quick house modification
+```text
+AEC_DEPLOYMENT_PASS
+```
 
-Use this first.
+When Rhino is closed, the test prints an expected warning that port `1999` is offline. That warning
+does not fail deployment. During a demo, the listener is valid only when port `1999` is owned by
+`Rhino.exe`.
 
-1. Double-click **AEC House Modification**.
-2. The launcher creates and opens a timestamped copy of the completed Rhino house. It never edits
-   the checked-in hero model.
-3. Ensure Rhino MCP is running.
-4. Enter a concise outcome request in Hermes, for example:
+## First test: house modification
+
+1. Double-click **AEC House Modification**. Do not open Hermes separately.
+2. Wait while the launcher creates a timestamped working copy, opens it in Rhino, starts
+   `AECMCPStart`, verifies the listener, selects `cliff-house-modifications-windows`, and opens the
+   Hermes UI.
+3. Enter:
 
    ```text
-   Audit the open working copy. Move the selected canopy 300 mm east. Preserve every other object,
-   validate the result, and report exactly what changed.
+   Inspect the active Rhino model. Find the swimming pool, report its bounds and nearby objects,
+   and frame it in the viewport. Do not modify anything.
    ```
 
-Success means Hermes recalls the Rhino execution recipe, audits the scene, performs the Rhino MCP
-operation through `rhino_scene_query`, `rhino_apply_operations`, and
-`rhino_verify_transaction`, and verifies that only the intended working-copy geometry changed.
-For another task, use the same four-part request: target, desired result, constraints, and evidence.
+4. Then try a bounded change:
 
-## Test 2 — complete house build
+   ```text
+   Add a 1.2-metre safety fence around the pool with a 1-metre gate on the house-facing side.
+   Preserve all existing geometry, verify the transaction independently, and frame the result.
+   ```
 
-1. Create a new empty, unmodified Rhino document.
-2. Ensure Rhino MCP is running.
-3. Double-click **AEC Full Build**.
-4. Enter:
+Success means Hermes uses `rhino_scene_query`, `rhino_apply_operations`, and
+`rhino_verify_transaction`. The protected golden master must remain unchanged.
+
+## Second test: full build
+
+1. Close the modification run and Rhino.
+2. Double-click **AEC Full Build**.
+3. If Rhino opens without a listener, run `AECMCPStart` once in Rhino and click the shortcut again.
+4. In Hermes, enter:
 
    ```text
    Start the cliff house full build.
    ```
 
-Hermes imports the supplied `cliff_house_02` source curves once, follows the phase gates, and
-constructs the house. It must not use the completed hero model.
+The workflow starts from `projects/cliff_house_02/rhino_assets/base_model.3dm`, follows the phase
+gates and golden-build contract, and never uses the completed modification master as construction
+input.
 
-Some Rhino MCP versions restart their listener after a document import. If the connection drops
-immediately after the source model imports, restart Rhino MCP on a free port and run:
+## Refresh or repair
 
-```powershell
-.\Deploy-AECDemos.ps1 -RhinoPort 10501 -Force
-```
-
-Continue the same demo; do not import the source model twice.
-
-## Workflow boundary
-
-| Shortcut | Input | Safety behavior |
-|---|---|---|
-| AEC Full Build | Wagstaff source curves | Builds all target geometry; completed hero is comparison-only |
-| AEC House Modification | Completed Rhino house | Creates a timestamped working copy before opening Rhino |
-
-## Refresh after pulling updates
+Close Rhino and Hermes, then run:
 
 ```powershell
-.\Deploy-AECDemos.ps1 -Force
+.\Deploy-AECDemos.ps1 -RhinoPort 1999 -Force
 .\Test-AECDeployment.ps1
 ```
 
-Existing profile configurations are backed up before replacement. Credentials and generated work
-remain outside Git.
+Do not change ports merely because a listener failed. First close duplicate Rhino processes and
+rerun on `1999`. Never expose raw Rhino scripting tools to the modification profile.
 
-The sidecar release is pinned once in `../hermes-aec-runtime.version`. Maintainers update that
-single file only after the corresponding GitHub release exists and passes both deployment tests.
+## Expected installed state
+
+- Hermes profiles: `cliff-house-full-build-windows` and
+  `cliff-house-modifications-windows`. Hermes also displays its undeletable built-in `default`
+  shell, which is not a demo profile.
+- Rhino transport: hardened AEC RhinoMCP on `127.0.0.1:1999`.
+- Legacy Rhino fallback: disabled.
+- Desktop: exactly the two AEC shortcuts listed above.
+- Runtime and memory stores: `%LOCALAPPDATA%\hermes\integrations`.

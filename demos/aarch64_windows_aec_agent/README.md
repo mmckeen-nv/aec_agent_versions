@@ -1,26 +1,34 @@
-# aarch64_windows_aec_agent
+# Cliff House AEC demos — Windows on ARM
 
-AEC agent workflows for Windows on ARM64 with Hermes Desktop, Rhino 8, Blender, and ComfyUI.
-Hermes is always installed in OOBE state: the repository never selects an inference provider,
-model, endpoint, credential, or active profile.
+This package installs two Hermes Desktop demos for Rhino 8:
 
-## Install once
+| Desktop shortcut | Purpose | Starting geometry |
+|---|---|---|
+| **AEC House Modification** | Make bounded changes to a completed house | A new disposable copy of the protected golden master |
+| **AEC Full Build** | Construct the house phase by phase | Wagstaff source curves, never the completed model |
 
-Read the complete [requirements and test guide](DEPLOY.md), then run:
+## Install
+
+Read [DEPLOY.md](DEPLOY.md) for the requirements and verified installation procedure. The entire
+package is installed with one command:
 
 ```powershell
+Set-ExecutionPolicy -Scope Process Bypass
 .\Deploy-AECDemos.ps1
 ```
 
-This creates **AEC Full Build** and **AEC House Modification** shortcuts on the Desktop.
+The installer deploys the two isolated Hermes profiles, the pinned Hermes AEC runtime, the bundled
+hardened RhinoMCP plug-in, workflow memory, and both desktop shortcuts. Users do not install a
+separate Rhino MCP server.
 
-## Workflows
+After installation, use only the two desktop shortcuts. They select the correct Hermes profile and
+open the graphical Hermes UI automatically.
 
-| Workflow | Purpose | Starting point |
-|---|---|---|
-| [`cliff_house_modifications`](cliff_house_modifications/) | Fast, reversible edits for the live demo | Protected Rhino and Blender masters |
-| [`cliff_house_full_build`](cliff_house_full_build/) | Original phase-driven Rhino → Blender → ComfyUI build | Empty Rhino document |
+## More detail
 
-The workflows use separate Hermes projects and must be attached only after the operator completes
-Hermes OOBE. Runtime profiles, sessions, credentials, logs, generated geometry, renders, ComfyUI
-models, and application preferences stay on the workstation and are not repository content.
+- [House modification workflow](cliff_house_modifications/README.md)
+- [Full-build workflow](cliff_house_full_build/README.md)
+- [Requirements, deployment, testing, and recovery](DEPLOY.md)
+
+Credentials, sessions, logs, generated models, renders, and application preferences remain local
+to the workstation and are not repository content.

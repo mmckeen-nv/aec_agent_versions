@@ -1,17 +1,12 @@
-# Install guide — Cliff House modifications on Windows ARM64
+# Modification demo installation
 
-## Outcome
+Use the canonical Windows installer and operator guide:
 
-Hermes Desktop completes its normal OOBE, then this quick-modification workspace is registered in
-the profile explicitly chosen by the operator. Rhino, Blender, and ComfyUI remain local GUI apps;
-their MCP bridges bind to loopback.
+**[../../DEPLOY.md](../../DEPLOY.md)**
 
-## Order
+Do not manually create a Hermes profile, attach RhinoMCP directly, or open the golden master. The
+top-level installer deploys the isolated profile and typed sidecar; the **AEC House Modification**
+desktop shortcut creates the working copy and performs bring-up.
 
-1. [Check system requirements](01-system-requirements.md).
-2. [Install applications](02-install-applications.md).
-3. [Complete Hermes OOBE and connect MCP](04-configure-cloud-endpoint.md).
-4. [Run the quick demo](05-run-cliff-house-demo.md).
-5. [Verify](06-verify-stack.md) or [roll back](08-cleanup-and-rollback.md).
-
-The repository does not provide a populated Hermes configuration or credential file.
+The numbered files in this directory contain component-level maintainer notes. They are not the
+normal operator installation path.

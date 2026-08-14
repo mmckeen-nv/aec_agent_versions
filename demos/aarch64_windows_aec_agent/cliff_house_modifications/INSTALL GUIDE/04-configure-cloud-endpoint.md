@@ -1,14 +1,8 @@
-# Step 3 — Complete Hermes OOBE
+# Profile and inference configuration
 
-1. Open Hermes Desktop normally. Do not launch it through a repository script.
-2. Complete the product's first-run flow and choose any supported inference provider/model.
-3. Store credentials only through Hermes' normal user configuration.
-4. Note the profile name you selected.
-5. Register this workspace after OOBE:
+Run the top-level `Deploy-AECDemos.ps1`; do not attach RhinoMCP directly through the Hermes UI.
+The installer creates `cliff-house-modifications-windows`, configures the NVIDIA Responses
+endpoint, stores the API key only in that local profile environment, and registers the typed AEC
+sidecar on Rhino port `1999`.
 
-```powershell
-.\installer\Register-HermesProject.ps1 -Profile '<your-profile>'
-```
-
-Then attach Rhino MCP and Blender MCP through Hermes' normal profile UI. Do not copy configuration
-from another demo. The script never launches Hermes or changes inference/MCP configuration.
+See [../../DEPLOY.md](../../DEPLOY.md) for the supported command and verification procedure.
