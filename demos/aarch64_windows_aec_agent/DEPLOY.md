@@ -4,7 +4,7 @@
 
 - Windows 11 on ARM64.
 - Rhino 8, activated and able to open a document.
-- RhinoMCP is installed automatically through Rhino's Yak package manager. The hardened plug-in uses `AECMCPStart`; while the deployment is pinned to upstream 0.3.2, use `MCPStart`.
+- The pinned runtime installs its bundled hardened AEC RhinoMCP plug-in automatically. It uses `AECMCPStart` and never exposes the upstream raw tool catalogue to Hermes.
 - Hermes Desktop installed. Both demo shortcuts open the graphical consumer UI; no terminal or
   Hermes TUI is part of the demo experience.
 - Git and Python 3.11 or newer. The deployer installs the pinned Daystrom DML memory harness and
@@ -33,8 +33,7 @@ pack into a separate store for each demo, deploys two isolated Hermes profiles, 
 the API key only if necessary, and creates **AEC Full Build** and **AEC House Modification** on the Desktop.
 Each shortcut runs its setup invisibly and opens the Hermes Desktop UI pinned to the correct profile.
 
-After installation, restart Rhino once and run `AECMCPStart` with port `1999` (`MCPStart` on
-upstream 0.3.2). Hermes only sees the typed sidecar tools; it cannot call RhinoMCP or raw Rhino
+After installation, restart Rhino once and run `AECMCPStart` on port `1999`. Hermes only sees the typed sidecar tools; it cannot call RhinoMCP or raw Rhino
 scripts directly.
 
 Memory retrieval is automatic. The operator does not need to mention DML. The seed contains tested

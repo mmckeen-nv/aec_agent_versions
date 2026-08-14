@@ -44,7 +44,7 @@ if (-not (Test-RhinoMCPReady)) {
   $deadline = (Get-Date).AddSeconds(90)
   do { Start-Sleep -Seconds 1 } while (-not (Test-RhinoMCPReady) -and (Get-Date) -lt $deadline)
   if (-not (Test-RhinoMCPReady)) {
-    throw "RhinoMCP is not ready on loopback port $($state.rhino_port). In Rhino run AECMCPStart (MCPStart on upstream 0.3.2), choose port $($state.rhino_port), then click the shortcut again."
+    throw "AEC RhinoMCP is not ready on loopback port $($state.rhino_port). In Rhino run AECMCPStart, then click the shortcut again."
   }
 }
 
