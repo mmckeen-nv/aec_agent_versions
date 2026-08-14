@@ -54,17 +54,3 @@ mcp_servers:
     command: __DML_ROOT__/.venv-dml/Scripts/python.exe
     args: [-m, dml_mcp.dml_mcp_server, --config, __DML_ROOT__/config/aec-demo.yaml, --storage, __DML_STORE__, --transport, stdio]
     enabled: true
-  rhino:
-    url: http://127.0.0.1:__RHINO_PORT__/
-    connect_timeout: 30
-    timeout: 320
-    enabled: true
-    tools:
-      include:
-        - get_viewport_image
-        - list_objects
-        - open_doc
-        - run_command
-        - run_csharp
-        - run_python
-        - save_doc

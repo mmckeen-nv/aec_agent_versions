@@ -66,14 +66,3 @@ plugins:
     - daystrom_dml
 
 mcp_servers:
-  rhino:
-    url: http://127.0.0.1:__RHINO_PORT__/
-    connect_timeout: 30
-    timeout: 320
-    enabled: true
-    tools:
-      include:
-        - get_viewport_image
-        - run_csharp
-        - run_python
-        - save_doc

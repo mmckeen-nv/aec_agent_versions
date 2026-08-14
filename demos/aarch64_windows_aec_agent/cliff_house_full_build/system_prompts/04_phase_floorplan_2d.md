@@ -35,7 +35,7 @@ will be derived from explicit room geometry.
 ## Pre-Phase Audit Checklist
 
 - [ ] Rhino document is open and units are set to metres
-- [ ] Rhino MCP server configured in the active Hermes profile and passing `hermes mcp test rhino`
+- [ ] Hermes AEC sidecar configured in the active profile and passing `hermes mcp test hermes_aec`; RhinoMCP port 1999 is owned by Rhino
 - [ ] Node.js runner template ready (see Script Runner Pattern below)
 - [ ] Delta notes read for site dimensions and room programme
 - [ ] Coordinate origin confirmed (typically building SW corner or plan centre)

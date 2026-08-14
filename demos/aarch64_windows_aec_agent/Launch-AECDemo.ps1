@@ -9,6 +9,13 @@ if (-not (Test-Path $desktopHermes)) { throw 'Hermes Desktop is not installed.' 
 $rhino = 'C:\Program Files\Rhino 8\System\Rhino.exe'
 if (-not (Test-Path $rhino)) { throw 'Rhino 8 is not installed.' }
 
+function Test-RhinoMCPReady {
+  $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.rhino_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (-not $listener) { return $false }
+  $owner = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+  return [bool]($owner -and $owner.ProcessName -eq 'Rhino')
+}
+
 if ($Demo -eq 'FullBuild') {
   $profile = 'cliff-house-full-build-windows'
   $workspace = Join-Path $PSScriptRoot 'cliff_house_full_build'
@@ -25,11 +32,19 @@ if ($Demo -eq 'FullBuild') {
   $stableChecks = 0
   do {
     Start-Sleep -Seconds 1
-    $listening = [bool](Get-NetTCPConnection -LocalPort $state.rhino_port -State Listen -ErrorAction SilentlyContinue)
+    $listening = Test-RhinoMCPReady
     if ($listening) { $stableChecks++ } else { $stableChecks = 0 }
   } while ($stableChecks -lt 3 -and (Get-Date) -lt $deadline)
   if ($stableChecks -lt 3) {
     throw "Rhino opened the working copy, but MCP did not become stable on port $($state.rhino_port) within 90 seconds."
+  }
+}
+
+if (-not (Test-RhinoMCPReady)) {
+  $deadline = (Get-Date).AddSeconds(90)
+  do { Start-Sleep -Seconds 1 } while (-not (Test-RhinoMCPReady) -and (Get-Date) -lt $deadline)
+  if (-not (Test-RhinoMCPReady)) {
+    throw "RhinoMCP is not ready on loopback port $($state.rhino_port). In Rhino run AECMCPStart (MCPStart on upstream 0.3.2), choose port $($state.rhino_port), then click the shortcut again."
   }
 }
 

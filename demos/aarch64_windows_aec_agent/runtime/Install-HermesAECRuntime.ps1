@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory)][ValidatePattern('^v\d+\.\d+\.\d+$')][string]$Version,
-  [int]$RhinoPort = 10500,
+  [int]$RhinoPort = 1999,
   [switch]$Force
 )
 

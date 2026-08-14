@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [string]$Profile = 'cliff-house-full-build-windows',
-  [ValidateRange(1024, 65535)][int]$RhinoPort = 10500,
+  [ValidateRange(1024, 65535)][int]$RhinoPort = 1999,
   [switch]$SkipApplications
 )
 $ErrorActionPreference = 'Stop'
@@ -13,7 +13,7 @@ $checks = [ordered]@{
   'Hermes binary' = [bool]$hermes
   'Hermes profile' = (Test-Path (Join-Path $env:LOCALAPPDATA "hermes\profiles\$Profile\config.yaml"))
   'Source-curve model' = (Test-Path $sourceModel)
-  'Rhino MCP listener' = [bool](Get-NetTCPConnection -LocalPort $RhinoPort -State Listen -ErrorAction SilentlyContinue)
+  'RhinoMCP listener owned by Rhino' = [bool]($( $connection = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $RhinoPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; $connection -and (Get-Process -Id $connection.OwningProcess -ErrorAction SilentlyContinue).ProcessName -eq 'Rhino' ))
 }
 if (-not $SkipApplications) {
   $checks['Rhino 8'] = Test-Path 'C:\Program Files\Rhino 8\System\Rhino.exe'
@@ -21,6 +21,6 @@ if (-not $SkipApplications) {
 }
 $checks.GetEnumerator() | ForEach-Object { Write-Host ("{0} {1}" -f ($(if($_.Value){'PASS'}else{'FAIL'}), $_.Key)) }
 if ($checks.Values -contains $false) { exit 1 }
-& $hermes -p $Profile mcp test rhino
-if ($LASTEXITCODE -ne 0) { throw 'Hermes could not discover Rhino MCP tools.' }
+& $hermes -p $Profile mcp test hermes_aec
+if ($LASTEXITCODE -ne 0) { throw 'Hermes could not discover the typed AEC sidecar.' }
 Write-Host "WINDOWS_AEC_SMOKE_PASS profile=$Profile rhino_port=$RhinoPort"

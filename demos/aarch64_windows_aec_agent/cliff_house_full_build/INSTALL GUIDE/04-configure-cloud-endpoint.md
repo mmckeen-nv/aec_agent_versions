@@ -7,7 +7,7 @@
 ```powershell
 .\installer\Deploy-HermesProfile.ps1 `
   -Profile cliff-house-full-build-windows `
-  -RhinoPort 10500
+  -RhinoPort 1999
 ```
 
 4. Store `NVIDIA_API_KEY` through Hermes' secret UI or in the profile environment; never put it in
@@ -17,7 +17,7 @@
 6. Verify the deployment:
 
 ```powershell
-.\installer\Test-LocalAEC.ps1 -Profile cliff-house-full-build-windows -RhinoPort 10500
+.\installer\Test-LocalAEC.ps1 -Profile cliff-house-full-build-windows -RhinoPort 1999
 ```
 
 The deployer refuses to overwrite an existing profile unless `-Force` is supplied and creates a

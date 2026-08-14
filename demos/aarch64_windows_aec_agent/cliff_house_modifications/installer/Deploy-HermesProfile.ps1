@@ -1,7 +1,7 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
   [string]$Profile = 'cliff-house-modifications-windows',
-  [ValidateRange(1024, 65535)][int]$RhinoPort = 10500,
+  [ValidateRange(1024, 65535)][int]$RhinoPort = 1999,
   [string]$Provider = 'custom:nvidia-switchyard',
   [string]$Model = 'switchyard/openai/gpt-5.6-sol',
   [string]$BaseUrl = 'https://inference-api.nvidia.com/v1',

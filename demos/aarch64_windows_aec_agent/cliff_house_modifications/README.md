@@ -16,7 +16,7 @@ User-selected inference <-> Hermes Desktop
 1. Complete Hermes OOBE and deploy the isolated profile:
 
    ```powershell
-   .\installer\Deploy-HermesProfile.ps1 -Profile cliff-house-modifications-windows -RhinoPort 10500
+   .\installer\Deploy-HermesProfile.ps1 -Profile cliff-house-modifications-windows -RhinoPort 1999
    ```
 
 2. Create a verified timestamped working copy:

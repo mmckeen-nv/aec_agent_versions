@@ -17,7 +17,7 @@ User-selected inference <-> Hermes Desktop (after OOBE)
 2. Deploy this package into it:
 
    ```powershell
-   .\installer\Deploy-HermesProfile.ps1 -Profile cliff-house-full-build-windows -RhinoPort 10500
+   .\installer\Deploy-HermesProfile.ps1 -Profile cliff-house-full-build-windows -RhinoPort 1999
    ```
 
 3. Start Rhino, Blender, ComfyUI, and their loopback MCP bridges.

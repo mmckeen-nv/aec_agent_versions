@@ -46,15 +46,12 @@ if ($hermes) {
 $statePath = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos\deployment.json'
 if (Test-Path $statePath) {
   $state = Get-Content -Raw -LiteralPath $statePath | ConvertFrom-Json
-  if (Get-NetTCPConnection -LocalPort $state.rhino_port -State Listen -ErrorAction SilentlyContinue) {
-    Write-Host "PASS  Rhino MCP listener on port $($state.rhino_port)"
-    foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
-      & $hermes -p $profile mcp test rhino *> $null
-      if ($LASTEXITCODE -eq 0) { Write-Host "PASS  Rhino MCP via $profile" }
-      else { Write-Host "FAIL  Rhino MCP via $profile"; $failures.Add("Rhino MCP via $profile") }
-    }
+  $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.rhino_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+  $owner = if ($listener) { Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue } else { $null }
+  if ($owner -and $owner.ProcessName -eq 'Rhino') {
+    Write-Host "PASS  RhinoMCP direct listener on port $($state.rhino_port), Rhino PID $($owner.Id)"
   } else {
-    Write-Host "WARN  Rhino MCP is not listening on configured port $($state.rhino_port). Start it before a demo."
+    Write-Host "WARN  RhinoMCP is not owned by Rhino on loopback port $($state.rhino_port). Run AECMCPStart in Rhino before a demo."
   }
 } else {
   Write-Host 'FAIL  Deployment state is missing.'

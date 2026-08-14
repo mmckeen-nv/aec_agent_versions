@@ -23,7 +23,7 @@ if (-not $RhinoPort) {
     } |
     Sort-Object LocalPort -Descending |
     Select-Object -First 1 -ExpandProperty LocalPort
-  if (-not $RhinoPort) { $RhinoPort = 10500 }
+  if (-not $RhinoPort) { $RhinoPort = 1999 }
 }
 
 $deployArguments = @{
@@ -63,7 +63,7 @@ $keyValue = $null
 
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
-@{ rhino_port = $RhinoPort; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion } |
+@{ schema_version = 2; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion } |
   ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stateRoot 'deployment.json') -Encoding utf8NoBOM
 
 $desktop = [Environment]::GetFolderPath('Desktop')
@@ -80,5 +80,5 @@ foreach ($shortcutDefinition in @(
   $shortcut.Save()
 }
 
-Write-Host "AEC_DEMOS_DEPLOYED rhino_port=$RhinoPort memory=daystrom_dml runtime=$runtimeVersion"
+Write-Host "AEC_DEMOS_DEPLOYED transport=rhinomcp-direct rhino_port=$RhinoPort memory=daystrom_dml runtime=$runtimeVersion"
 Write-Host 'Use the two new Desktop shortcuts: AEC Full Build and AEC House Modification.'
