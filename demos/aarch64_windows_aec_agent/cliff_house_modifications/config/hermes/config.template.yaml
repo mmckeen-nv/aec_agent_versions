@@ -31,7 +31,6 @@ agent:
     - todo
     - memory
     - session_search
-    - delegation
     - cronjob
 
 memory:

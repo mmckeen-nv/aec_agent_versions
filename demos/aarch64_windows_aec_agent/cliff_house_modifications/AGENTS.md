@@ -19,8 +19,10 @@ their note requiring verification of structure, egress, accessibility, and local
 For every modification request, use exactly this progression:
 
 1. Assume the desktop launcher has already opened the timestamped working copy. Call
-   `rhino_scene_query` once with the narrowest useful selector. Confirm document revision, path,
-   units, tolerance, bounds, total count, and stable candidate IDs before mutation.
+   `rhino_scene_query` first with `mode=summary`; it returns compact document metadata, bounds,
+   layer counts, and type counts without dumping every object. Then make at most one
+   `mode=objects` query with a name/layer/type/ID selector and `limit<=25`. Confirm revision,
+   units, bounds, and stable target IDs before mutation.
 2. At most one `get_viewport_image` before mutation, only when geometry relationships remain
    ambiguous after the audit.
 3. Call `rhino_apply_operations` once with the exact scene revision, one unique stable
@@ -28,8 +30,9 @@ For every modification request, use exactly this progression:
    operation batch. Do not generate RhinoCommon for routine geometry. The sidecar validates the
    batch, preserves in-place GUIDs, persists its receipt, captures created/modified/deleted IDs,
    reconciles dropped responses, and rolls back a failed transaction.
-4. Run one focused post-change `rhino_scene_query`, then call `rhino_verify_transaction` with the
-   receipt, before/after scenes, and task-specific invariants.
+4. Require `receipt.verification.status=verified`; the sidecar automatically performs the
+   independent before/after scene-delta proof. Make one focused post-change object query only when
+   a task-specific spatial or naming assertion is not already present in the receipt.
 5. One `get_viewport_image`, then `save_doc`, report the evidence, and stop.
 
 Web search is available for building, zoning, accessibility, fire, safety, product, and other
@@ -38,7 +41,9 @@ the sources used, and clearly distinguish binding requirements from guidance.
 
 Automatic Daystrom retrieval is sufficient. The profile intentionally does not expose callable
 Daystrom tools, skills, sessions, files, terminal, browser automation, vision-analysis, planning,
-delegation, or computer-use tools. Do not attempt to discover substitutes. The normal ceiling is
+or computer-use tools. Delegation is available only for parallel read-only analysis: give delegates
+compact scene subsets, never Rhino/MCP access, and require them to return findings or proposed typed
+operations. The coordinator alone may call Rhino tools, and all mutations must remain serial. The normal ceiling is
 two Rhino inspection calls before
 mutation, one typed transaction, one verification, one save, and no more than two viewport captures.
 Never call `rhino_execute_python`, raw `run_python`, or raw `run_csharp` in this modification
