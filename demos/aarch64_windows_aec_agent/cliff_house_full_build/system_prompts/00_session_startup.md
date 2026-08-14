@@ -68,6 +68,9 @@ communicates throughout the entire project.
 ### Step 6 -- Collect reference material
 Run: system_prompts/00c_references_protocol.md
 
+Then read `system_prompts/00d_golden_master_contract.md`. For `cliff_house_02`, it is the
+normative geometry, naming, layer, program, and acceptance specification for all Rhino phases.
+
 **Do not skip this step.** References are design constraints, not
 suggestions. If the user says they have no references, note that
 explicitly in Section 13 of project_prompt.md.

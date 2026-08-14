@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Visible FreeCAD -> Blender smoke build for the Cliff House full-build demo.
 
-Runs only against loopback MCP clients. It creates timestamped working artifacts and never
-opens or imports the checked-in hero/master/reference geometry.
+Runs only against loopback MCP clients. It creates timestamped working artifacts, reconstructs
+the immutable upstream guide curves from a platform-neutral manifest, and never imports a
+completed hero, STEP, FCStd master, or Blender scene as construction geometry.
 """
 
 from __future__ import annotations
@@ -71,11 +72,18 @@ async def call(session: ClientSession, name: str, arguments: dict[str, Any]) -> 
 
 async def freecad_build(root: Path, run_dir: Path, document: str) -> tuple[Path, Path]:
     params = StdioServerParameters(command=str(Path.home() / ".local/bin/freecad-mcp"), args=[])
-    fcstd = run_dir / "freecad" / "cliff_house_01_working.FCStd"
+    fcstd = run_dir / "freecad" / "cliff_house_02_working.FCStd"
     bundle = run_dir / "freecad_blender_bundle"
     geometry = bundle / "geometry"
     for directory in (fcstd.parent, geometry, run_dir / "receipts"):
         directory.mkdir(parents=True, exist_ok=True)
+
+    reference_path = root / "projects/cliff_house_02/freecad_reference/source_curves.json"
+    reference = json.loads(reference_path.read_text(encoding="utf-8"))
+    if reference.get("source_sha256") != "DDACAC2BA0CEA8DF75A1B02B9214C64BBCBF4B5D214E60C67DAC94A32E7272D0":
+        raise RuntimeError("FreeCAD source-curve manifest does not match the pinned upstream model")
+    if len(reference.get("objects", [])) != 16:
+        raise RuntimeError("FreeCAD source-curve manifest must contain exactly 16 upstream objects")
 
     async with stdio_client(params) as (reader, writer):
         async with ClientSession(reader, writer) as session:
@@ -83,7 +91,7 @@ async def freecad_build(root: Path, run_dir: Path, document: str) -> tuple[Path,
             init_code = f"""
 import FreeCAD as App, FreeCADGui as Gui, Part
 doc = App.newDocument({document!r})
-for name, label in [('Site','02 Site'),('Plans','04 Plans'),('Architecture','03-06 Architecture')]:
+for name, label in [('ReferenceSource','00 Reference — Wagstaff source curves'),('Site','02 Site'),('Plans','04 Plans'),('Architecture','03-06 Architecture')]:
     group = doc.addObject('App::DocumentObjectGroup', name); group.Label = label
 doc.recompute()
 Gui.activeDocument().activeView().viewAxonometric()
@@ -92,6 +100,33 @@ doc.saveAs({str(fcstd)!r})
 print('FREECAD_EMPTY_DOCUMENT_PASS {document}')
 """
             await call(session, "execute_code", {"code": init_code})
+
+            reference_payload = json.dumps(reference, separators=(",", ":"))
+            reference_code = f"""
+import FreeCAD as App, FreeCADGui as Gui, Part, json, re
+doc=App.getDocument({document!r}); payload=json.loads({reference_payload!r}); scale=float(payload['scale'])
+group=doc.getObject('ReferenceSource'); created=[]
+for entry in payload['objects']:
+    safe='Ref_'+str(entry['index']).zfill(2)+'_'+re.sub(r'[^A-Za-z0-9_]+','_',entry['name'])
+    if entry['type']=='TextDot':
+        obj=doc.addObject('App::Annotation',safe); obj.LabelText=[entry['text']]
+        p=entry['point']; obj.Position=App.Vector(p[0]*scale,p[1]*scale,p[2]*scale)
+    else:
+        obj=doc.addObject('Part::Feature',safe)
+        raw=entry.get('points') or entry.get('samples'); pts=[App.Vector(p[0]*scale,p[1]*scale,p[2]*scale) for p in raw]
+        if entry['type']=='NurbsCurve':
+            curve=Part.BSplineCurve(); curve.interpolate(pts); obj.Shape=curve.toShape()
+        else:
+            obj.Shape=Part.makePolygon(pts)
+    obj.Label=entry['name']; obj.addProperty('App::PropertyString','SourceLayer','Reference'); obj.SourceLayer=entry['layer']
+    obj.addProperty('App::PropertyString','SourceObjectId','Reference'); obj.SourceObjectId=entry['id']
+    obj.addProperty('App::PropertyBool','ReferenceLocked','Reference'); obj.ReferenceLocked=True
+    group.addObject(obj); obj.ViewObject.Selectable=False; created.append(obj)
+doc.recompute(); doc.saveAs({str(fcstd)!r}); Gui.activeDocument().activeView().fitAll()
+if len(created)!=16: raise RuntimeError('Expected 16 reference objects, created '+str(len(created)))
+print('FREECAD_REFERENCE_SOURCE_PASS objects='+str(len(created))+' source_sha256='+payload['source_sha256'])
+"""
+            await call(session, "execute_code", {"code": reference_code})
 
             terrain_code = f"""
 import FreeCAD as App, FreeCADGui as Gui, Part
@@ -147,7 +182,7 @@ for obj in sorted([o for o in doc.Objects if hasattr(o,'Shape') and not o.Shape.
     path=os.path.join(out,obj.Name+'.obj'); Mesh.export([obj],path)
     h=hashlib.sha256(open(path,'rb').read()).hexdigest(); bb=obj.Shape.BoundBox
     entries.append({{'stable_id':obj.StableId,'name':obj.Name,'label':obj.Label,'architectural_role':obj.ArchitecturalRole,'material_role':obj.MaterialRole,'level':obj.Level,'source_constraint':obj.SourceConstraint,'geometry':'geometry/'+obj.Name+'.obj','sha256':h,'bounds':[bb.XMin,bb.YMin,bb.ZMin,bb.XMax,bb.YMax,bb.ZMax]}})
-manifest={{'schema_version':1,'units':'m','source_document':{document!r},'source_policy':'build_from_empty_document','objects':entries}}
+manifest={{'schema_version':1,'units':'m','source_document':{document!r},'source_policy':'reference_driven_reconstruction','reference_manifest':'projects/cliff_house_02/freecad_reference/source_curves.json','reference_sha256':{reference['source_sha256']!r},'objects':entries}}
 mp={str(bundle / 'scene_manifest.json')!r}; open(mp,'w').write(json.dumps(manifest,indent=2))
 open({str(bundle / 'SHA256SUMS.txt')!r},'w').write(''.join(e['sha256']+'  '+e['geometry']+'\\n' for e in entries))
 doc.saveAs({str(fcstd)!r}); print('FREECAD_BLENDER_EXPORT_PASS objects='+str(len(entries)))
@@ -159,7 +194,7 @@ doc.saveAs({str(fcstd)!r}); print('FREECAD_BLENDER_EXPORT_PASS objects='+str(len
 async def blender_build(run_dir: Path, manifest_path: Path) -> tuple[Path, Path]:
     blend_dir = run_dir / "blender"
     blend_dir.mkdir(parents=True, exist_ok=True)
-    blend_path = blend_dir / "cliff_house_01_working.blend"
+    blend_path = blend_dir / "cliff_house_02_working.blend"
     render_path = blend_dir / "cliff_house_test_render.png"
     params = StdioServerParameters(
         command=str(Path.home() / ".local/bin/blender-mcp"),
@@ -235,7 +270,7 @@ print('FREECAD_BLENDER_IMPORT_PASS objects='+str(len(manifest['objects']))); pri
 async def freecad_export_existing(run_dir: Path, document: str) -> tuple[Path, Path]:
     """Resume a completed visible FreeCAD build and create its deterministic mesh bundle."""
     params = StdioServerParameters(command=str(Path.home() / ".local/bin/freecad-mcp"), args=[])
-    fcstd = run_dir / "freecad" / "cliff_house_01_working.FCStd"
+    fcstd = run_dir / "freecad" / "cliff_house_02_working.FCStd"
     bundle = run_dir / "freecad_blender_bundle"
     geometry = bundle / "geometry"
     geometry.mkdir(parents=True, exist_ok=True)
@@ -255,7 +290,7 @@ for obj in objects:
         entries.append({{'stable_id':obj.StableId,'name':obj.Name,'label':obj.Label,'architectural_role':obj.ArchitecturalRole,'material_role':obj.MaterialRole,'level':obj.Level,'source_constraint':obj.SourceConstraint,'geometry':'geometry/'+obj.Name+'.obj','sha256':h,'bounds':[bb.XMin,bb.YMin,bb.ZMin,bb.XMax,bb.YMax,bb.ZMax],'facets':mesh.CountFacets}})
     except Exception as exc: failures.append(obj.Name+': '+str(exc))
 if failures: raise RuntimeError('Mesh export failures: '+' | '.join(failures))
-manifest={{'schema_version':1,'units':'m','source_document':{document!r},'source_policy':'build_from_empty_document','objects':entries}}
+manifest={{'schema_version':1,'units':'m','source_document':{document!r},'source_policy':'reference_driven_reconstruction','reference_manifest':'projects/cliff_house_02/freecad_reference/source_curves.json','objects':entries}}
 mp={str(manifest_path)!r}; open(mp,'w').write(json.dumps(manifest,indent=2))
 open({str(bundle / 'SHA256SUMS.txt')!r},'w').write(''.join(e['sha256']+'  '+e['geometry']+'\\n' for e in entries))
 doc.saveAs({str(fcstd)!r}); print('FREECAD_BLENDER_EXPORT_PASS objects='+str(len(entries)))
@@ -274,7 +309,7 @@ def write_receipts(root: Path, run_dir: Path, fcstd: Path, manifest: Path, blend
     receipt_dir.mkdir(parents=True, exist_ok=True)
     phases = [
         ("PHASE_00_STARTUP_PASS", {"mcp": {"freecad": "PASS", "blender": "PASS"}}),
-        ("PHASE_01_CONFIG_PASS", {"source_policy": "build_from_empty_document", "units": "m"}),
+        ("PHASE_01_CONFIG_PASS", {"source_policy": "reference_driven_reconstruction", "units": "m"}),
         ("PHASE_02_SITE_PASS", {}), ("PHASE_03_MASSING_PASS", {}),
         ("PHASE_04_PLAN2D_PASS", {}), ("PHASE_05_PLAN3D_PASS", {}),
         ("PHASE_06_DETAIL_PASS", {}), ("FREECAD_BLENDER_EXPORT_PASS", {"manifest_sha256": sha256(manifest)}),

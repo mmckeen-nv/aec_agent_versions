@@ -4,6 +4,16 @@ AEC agent workflows for Windows on ARM64 with Hermes Desktop, Rhino 8, Blender, 
 Hermes is always installed in OOBE state: the repository never selects an inference provider,
 model, endpoint, credential, or active profile.
 
+## Install once
+
+Read the complete [requirements and test guide](DEPLOY.md), then run:
+
+```powershell
+.\Deploy-AECDemos.ps1
+```
+
+This creates **AEC Full Build** and **AEC House Modification** shortcuts on the Desktop.
+
 ## Workflows
 
 | Workflow | Purpose | Starting point |

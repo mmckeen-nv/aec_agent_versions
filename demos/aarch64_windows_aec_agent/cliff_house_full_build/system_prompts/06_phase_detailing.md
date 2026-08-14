@@ -8,6 +8,9 @@
 
 ## Purpose
 
+For `cliff_house_02`, the glazing runs, bronze grids, balconies, cable rails, veranda posts,
+entry, garage, patio, and infinity-pool geometry in `00d_golden_master_contract.md` are mandatory.
+
 Add all architectural surface elements to the massing: curtain wall glazing and
 mullion grid, balcony, veranda posts, entry sequence (canopy, steps, landing, door),
 garage doors, and driveway. No materials assigned yet — everything is neutral grey.

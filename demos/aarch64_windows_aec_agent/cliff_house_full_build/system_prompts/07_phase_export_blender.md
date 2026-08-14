@@ -8,6 +8,9 @@
 
 ## Purpose
 
+Before export, enforce the acceptance gate in `00d_golden_master_contract.md`. Do not hand off a
+document unless all counts, unique names, required objects, units, layers, and metadata pass.
+
 Transfer all Rhino geometry to Blender with full material metadata intact.
 This is the critical handoff phase. The material tags set here flow through
 every subsequent phase — Cycles assignment, render passes, and ComfyUI prompts.

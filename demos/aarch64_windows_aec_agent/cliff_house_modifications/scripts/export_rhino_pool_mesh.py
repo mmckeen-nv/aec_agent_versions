@@ -12,7 +12,7 @@ POOL_OBJECTS = {
 
 repo = Path(__file__).resolve().parents[1]
 asset_dir = repo / "demo" / "cliff-house"
-source = asset_dir / "cliff_house_HERO_RHINO_MODEL.3dm"
+source = asset_dir / "cliff_house_GOLDEN_MASTER.3dm"
 model = rhino3dm.File3dm.Read(str(source))
 
 found = set()

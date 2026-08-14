@@ -8,6 +8,9 @@
 
 ## Purpose
 
+For `cliff_house_02`, construct the contract's exact 11 named massing volumes. The table in
+`00d_golden_master_contract.md` overrides all approximate or adjustable dimensions below.
+
 Establish the pure building volume — lower floor, upper floor, roof, and floor
 slabs as simple solids. No windows, doors, or surface detail. Massing is the
 proportional foundation everything else is built on.

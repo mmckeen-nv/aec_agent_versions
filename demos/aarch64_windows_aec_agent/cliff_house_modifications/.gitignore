@@ -30,3 +30,4 @@ demo/cliff-house/*_WORKING.blend
 demo/cliff-house/renders/
 .DS_Store
 Thumbs.db
+*.rhl

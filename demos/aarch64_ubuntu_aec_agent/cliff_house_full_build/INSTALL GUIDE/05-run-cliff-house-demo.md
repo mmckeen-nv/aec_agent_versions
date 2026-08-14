@@ -53,7 +53,7 @@ After the inspection succeeds, use narrowly scoped prompts and approve geometry 
 only when the intended target is explicit.
 
 To run the saved deterministic test workflow directly, follow [RUN_WORKFLOW.md](../RUN_WORKFLOW.md).
-It builds from an empty FreeCAD document, creates the handoff manifest, assembles the Blender
+It reconstructs the pinned source guides in a clean FreeCAD document, creates the handoff manifest, assembles the Blender
 scene, and emits `FULL_BUILD_TEST_RENDER_PASS` when the render succeeds.
 
 ## Expected result

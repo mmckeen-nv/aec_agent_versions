@@ -2,6 +2,16 @@
 
 AEC agent workflows validated for ARM64 Ubuntu on NVIDIA DGX Spark.
 
+## Install once
+
+See [DEPLOY.md](DEPLOY.md), or run:
+
+```bash
+bash ./deploy-aec-demos.sh
+```
+
+This creates **AEC Full Build** and **AEC House Modification** launchers on the Desktop.
+
 ## Workflows
 
 | Workflow | Purpose | State |

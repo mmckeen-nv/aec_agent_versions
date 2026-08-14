@@ -1,0 +1,84 @@
+[CmdletBinding()]
+param(
+  [ValidateRange(0, 65535)][int]$RhinoPort = 0,
+  [ValidateRange(8192, 1050000)][int]$ContextLength = 1000000,
+  [switch]$Force
+)
+
+$ErrorActionPreference = 'Stop'
+$platformRoot = $PSScriptRoot
+$fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
+$quickRoot = Join-Path $platformRoot 'cliff_house_modifications'
+$runtimeVersionFile = Join-Path (Split-Path -Parent $platformRoot) 'hermes-aec-runtime.version'
+$runtimeVersion = (Get-Content -Raw -LiteralPath $runtimeVersionFile).Trim()
+if ($runtimeVersion -notmatch '^v\d+\.\d+\.\d+$') { throw "Invalid Hermes AEC runtime pin: $runtimeVersion" }
+
+& (Join-Path $platformRoot 'memory\Install-AECDml.ps1') -Force:$Force
+
+if (-not $RhinoPort) {
+  $RhinoPort = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+    Where-Object {
+      $_.LocalPort -ge 1024 -and $_.LocalPort -le 65535 -and
+      (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName -eq 'Rhino'
+    } |
+    Sort-Object LocalPort -Descending |
+    Select-Object -First 1 -ExpandProperty LocalPort
+  if (-not $RhinoPort) { $RhinoPort = 1999 }
+}
+
+$deployArguments = @{
+  RhinoPort = $RhinoPort
+  ContextLength = $ContextLength
+  Force = $Force
+}
+& (Join-Path $fullRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-full-build-windows'
+& (Join-Path $quickRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-modifications-windows'
+& (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -Force:$Force
+
+$profiles = @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')
+$keyValue = $env:NVIDIA_API_KEY
+if (-not $keyValue) {
+  foreach ($profile in $profiles) {
+    $envFile = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\.env"
+    if (Test-Path $envFile) {
+      $line = Get-Content -LiteralPath $envFile | Where-Object { $_ -match '^NVIDIA_API_KEY=.+' } | Select-Object -First 1
+      if ($line) { $keyValue = $line.Substring('NVIDIA_API_KEY='.Length); break }
+    }
+  }
+}
+if (-not $keyValue) {
+  $secure = Read-Host 'NVIDIA API key (stored only in the two local Hermes profiles)' -AsSecureString
+  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+  try { $keyValue = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+  finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+  if ([string]::IsNullOrWhiteSpace($keyValue)) { throw 'An NVIDIA API key is required.' }
+}
+foreach ($profile in $profiles) {
+  $envFile = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\.env"
+  $lines = if (Test-Path $envFile) { @(Get-Content -LiteralPath $envFile | Where-Object { $_ -notmatch '^NVIDIA_API_KEY=' }) } else { @() }
+  $lines += "NVIDIA_API_KEY=$keyValue"
+  Set-Content -LiteralPath $envFile -Value $lines -Encoding utf8NoBOM
+}
+$keyValue = $null
+
+$stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
+New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
+@{ schema_version = 2; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion } |
+  ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stateRoot 'deployment.json') -Encoding utf8NoBOM
+
+$desktop = [Environment]::GetFolderPath('Desktop')
+$shell = New-Object -ComObject WScript.Shell
+foreach ($shortcutDefinition in @(
+  @{ Name = 'AEC Full Build'; Demo = 'FullBuild' },
+  @{ Name = 'AEC House Modification'; Demo = 'Modification' }
+)) {
+  $shortcut = $shell.CreateShortcut((Join-Path $desktop "$($shortcutDefinition.Name).lnk"))
+  $shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+  $shortcut.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$platformRoot\Launch-AECDemo.ps1`" -Demo $($shortcutDefinition.Demo)"
+  $shortcut.WorkingDirectory = $platformRoot
+  $shortcut.Description = $shortcutDefinition.Name
+  $shortcut.Save()
+}
+
+Write-Host "AEC_DEMOS_DEPLOYED transport=rhinomcp-direct rhino_port=$RhinoPort memory=daystrom_dml runtime=$runtimeVersion"
+Write-Host 'Use the two new Desktop shortcuts: AEC Full Build and AEC House Modification.'

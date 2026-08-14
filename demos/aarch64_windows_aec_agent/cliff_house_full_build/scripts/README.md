@@ -6,3 +6,7 @@ and ComfyUI processing; they do not configure Hermes or replace the prompt revie
 
 Run helpers only against ignored working documents and outputs. Never open a protected master as
 the starting point for the full build.
+
+Before Phase 07 export, run `python .\scripts\validate_golden_contract.py
+.\work\<run-id>\rhino\base_model.3dm`. It fails closed on count, unique-name, semantic-root,
+unit, required-object, and document-metadata mismatches.

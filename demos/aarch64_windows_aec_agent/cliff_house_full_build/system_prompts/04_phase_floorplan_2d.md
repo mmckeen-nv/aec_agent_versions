@@ -9,6 +9,9 @@
 
 ## Purpose
 
+For `cliff_house_02`, the three-level room program, level-prefixed names, hidden plan layers, and
+schematic-code note in `00d_golden_master_contract.md` are mandatory.
+
 Generate a fully annotated 2D floor plan in Rhino — room outlines, site
 features, labels — organised into a clean nested layer hierarchy.
 This plan serves as the drawing-board reference and camera-visible annotation
@@ -35,7 +38,7 @@ will be derived from explicit room geometry.
 ## Pre-Phase Audit Checklist
 
 - [ ] Rhino document is open and units are set to metres
-- [ ] RhinoMCP server running on port 3001
+- [ ] Hermes AEC sidecar configured in the active profile and passing `hermes mcp test hermes_aec`; RhinoMCP port 1999 is owned by Rhino
 - [ ] Node.js runner template ready (see Script Runner Pattern below)
 - [ ] Delta notes read for site dimensions and room programme
 - [ ] Coordinate origin confirmed (typically building SW corner or plan centre)
@@ -276,55 +279,27 @@ RhinoApp.RunScript("_Plan _World", false);  // top-down view
 
 ---
 
-## Script Runner Pattern
+## Runtime transaction pattern
 
-Scripts are written to disk and executed via a Node.js runner.
-This avoids MCP connection timeouts on long-running scripts.
+Treat the snippets above as geometry and presentation intent, not as a raw-tool instruction.
+Capture the scene revision with `rhino_scene_query`, express each reviewed plan unit with
+`rhino_apply_operations`, and prove it with `rhino_verify_transaction`. Do not create a Node
+runner, call MCP through terminal HTTP, or substitute filesystem or UI execution.
 
-```javascript
-// runner.mjs
-import { readFileSync } from "fs";
-const B = "http://localhost:3001/mcp";
-const H = { "Content-Type": "application/json",
-             "Accept": "application/json, text/event-stream" };
-let id = 1;
-async function mcp(m, p = {}) {
-    const r = await fetch(B, { method:"POST", headers:H,
-        body: JSON.stringify({ jsonrpc:"2.0", id:id++, method:m, params:p }) });
-    const t = await r.text();
-    const a = [];
-    for (const l of t.split("\n"))
-        if (l.startsWith("data:")) try { a.push(JSON.parse(l.slice(5))); } catch {}
-    return a[a.length-1] || {};
-}
-await mcp("initialize", { protocolVersion:"2024-11-05",
-    capabilities:{}, clientInfo:{ name:"hermes", version:"1.0" } });
-await fetch(B, { method:"POST", headers:H,
-    body: JSON.stringify({ jsonrpc:"2.0", method:"notifications/initialized" }) });
-
-const script = readFileSync("C:/path/to/script.cs", "utf8");
-const r = await mcp("tools/call",
-    { name:"rhinoceros_operator", arguments:{ script } });
-console.log(r?.result?.isError ? "FAIL" : "OK",
-    r?.result?.content?.[0]?.text?.substring(0,120) || "");
-```
-
-Run from terminal: `node runner.mjs`
-
-**Chunk scripts that exceed ~60 lines of C# content.**
-The RhinoMCP C# engine handles long scripts but splitting by logical step
-(layers, rooms, site features) makes debugging much easier.
+If a required annotation or presentation operation is absent from the typed catalog, the Full
+Build profile may use one bounded transactional `rhino_execute_python` operation. Checkpoint it,
+keep it scoped to one reviewed unit, and apply the same before/after verification.
 
 ---
 
 ## Output to File (for debugging)
 
-`RhinoApp.WriteLine` output does NOT return through MCP.
-Use `System.IO.File.WriteAllText` to inspect values:
+Return concise audit values from the sidecar receipt and focused scene queries. If file diagnostics are unavoidable,
+write beneath the active profile using a resolved path, never a machine-specific author path.
 
 ```csharp
 System.IO.File.WriteAllText(
-    @"<WORKSPACE_ROOT>\work\<run-id>\debug.txt",
+    @"C:\Users\swags\Documents\AEC_demo_v2\debug.txt",
     "Layer count: " + doc.Layers.Count + "\nObjects: " + doc.Objects.Count);
 ```
 

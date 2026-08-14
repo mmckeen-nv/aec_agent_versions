@@ -5,9 +5,10 @@ pipeline. They override conflicting instructions in every upstream prompt.
 
 ## Build authority
 
-- The design brief at `projects/cliff_house_01/user_prompts/project_prompt.md` is the source of
+- The design brief at `projects/cliff_house_02/user_prompts/project_prompt.md` is the source of
   design intent and dimensions.
-- Begin in a new, empty FreeCAD document using metres.
+- Begin in a new, clean FreeCAD document using metres. Reconstruct the immutable upstream guide
+  curves from `projects/cliff_house_02/freecad_reference/source_curves.json` before building.
 - Build the architecture incrementally through FreeCAD MCP. Do not import finished building
   geometry to satisfy a construction phase.
 - The following files are validation/reference assets only and must not be opened, imported,
@@ -81,4 +82,3 @@ Do not silently approximate missing dimensions. Ask at the active review gate.
 If a required FreeCAD implementation, handoff script, or ComfyUI helper is missing, stop and
 name the missing component. Never bypass the phase with a master, hero, STEP, OBJ, or finished
 Blender scene.
-

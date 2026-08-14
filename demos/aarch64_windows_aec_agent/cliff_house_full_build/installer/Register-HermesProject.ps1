@@ -4,8 +4,10 @@ param([Parameter(Mandatory)][string]$Profile)
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 $root = Split-Path -Parent $PSScriptRoot
-$hermes = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\venv\Scripts\hermes.exe'
-if (-not (Test-Path -LiteralPath $hermes)) { throw 'Hermes is not installed.' }
+$hermesCommand = Get-Command hermes -ErrorAction SilentlyContinue
+$bundledHermes = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\venv\Scripts\hermes.exe'
+$hermes = if ($hermesCommand) { $hermesCommand.Source } elseif (Test-Path $bundledHermes) { $bundledHermes } else { $null }
+if (-not $hermes) { throw 'Hermes is not installed or available on PATH.' }
 $profileConfig = Join-Path $env:LOCALAPPDATA "hermes\profiles\$Profile\config.yaml"
 if (-not (Test-Path -LiteralPath $profileConfig)) { throw "Profile '$Profile' has not completed Hermes OOBE." }
 

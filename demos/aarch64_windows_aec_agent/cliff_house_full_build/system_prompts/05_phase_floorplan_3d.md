@@ -10,6 +10,9 @@
 
 ## Purpose
 
+For `cliff_house_02`, use the exact `AEC_HOUSE` layers and named level partitions required by
+`00d_golden_master_contract.md`; generic room examples are non-normative.
+
 Extrude the 2D floor plan into a full 3D room-by-room wall model — solid wall
 boxes on room-specific sublayers, with door openings, correct wall heights,
 and a clean separation between the detailed 3D floor plan and the simplified

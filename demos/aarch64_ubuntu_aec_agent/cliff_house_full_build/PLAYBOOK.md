@@ -69,7 +69,7 @@ cliff_house_full_build/
 │   ├── freecad_blender_handoff.md
 │   ├── validate_blender_scene.py
 │   └── comfyui_archviz.py
-├── projects/cliff_house_01/
+├── projects/cliff_house_02/
 │   ├── user_prompts/project_prompt.md
 │   ├── references/
 │   ├── freecad_assets/

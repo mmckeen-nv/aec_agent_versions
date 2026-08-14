@@ -1,0 +1,4 @@
+memory_summary: Start or resume the full build from its phase contract and construct through Rhino MCP.
+memory_class: procedural_tool_call
+
+For “build the cliff house,” read the skill index, Windows workspace rules, demo rules, phase state, project brief, and active phase prompt in that order. Start Phase 00 or resume only from a valid receipt. Use the source-curve `base_model.3dm`; never use HERO, MASTER, or completed quick-demo geometry. For each approved construction unit, capture the scene revision with `rhino_scene_query`, submit the smallest typed batch with `rhino_apply_operations`, and prove it with `rhino_verify_transaction`. Use the Full Build profile's transactional `rhino_execute_python` escape only when the typed catalog cannot express the required operation. After each unit return object counts, named layers, bounds, validity checks, and the phase receipt required by the playbook.

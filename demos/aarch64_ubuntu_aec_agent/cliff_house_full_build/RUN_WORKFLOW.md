@@ -1,9 +1,10 @@
 # Run the reproducible Cliff House workflow
 
 This is the saved, executable FreeCAD-to-Blender workflow used for the DGX Spark test render.
-It starts with an empty FreeCAD document, creates named architectural objects through FreeCAD
-MCP, exports a hashed geometry bundle and manifest, then uses Blender MCP to assemble and render
-the scene. It never opens or imports a checked-in hero, master, STEP, OBJ, or Blend asset.
+It starts with a clean FreeCAD document, reconstructs Wagstaff's immutable source guides from the
+checked-in JSON manifest, creates named architectural objects through FreeCAD MCP, exports a
+hashed geometry bundle and manifest, then uses Blender MCP to assemble and render the scene. It
+never imports a completed hero, master, STEP, OBJ, or Blend asset as construction geometry.
 
 ## Prerequisites
 
@@ -44,10 +45,10 @@ Resume reuses the completed FreeCAD handoff and continues the Blender assembly/r
 
 ## Saved workflow stages
 
-1. Create a new timestamped FreeCAD document from an empty document.
+1. Create a new timestamped FreeCAD document and reconstruct the 16 source guide objects.
 2. Build the terrain, site, pool, architectural masses, glazing, and entry objects one named
    object at a time through FreeCAD MCP.
-3. Save `freecad/cliff_house_01_working.FCStd` and emit per-object receipts.
+3. Save `freecad/cliff_house_02_working.FCStd` and emit per-object receipts.
 4. Tessellate only the generated objects into `freecad_blender_bundle/geometry/`.
 5. Write `freecad_blender_bundle/scene_manifest.json` with object roles, materials, levels,
    source constraints, and SHA-256 hashes.
@@ -59,11 +60,11 @@ Resume reuses the completed FreeCAD handoff and continues the Blender assembly/r
 
 ```text
 work/$RUN_ID/
-├── freecad/cliff_house_01_working.FCStd
+├── freecad/cliff_house_02_working.FCStd
 ├── freecad_blender_bundle/
 │   ├── geometry/*.obj
 │   └── scene_manifest.json
-├── blender/cliff_house_01_working.blend
+├── blender/cliff_house_02_working.blend
 ├── blender/cliff_house_test_render.png
 └── receipts/*.json
 ```
