@@ -52,6 +52,10 @@ terminal:
   timeout: 180
 
 mcp_servers:
+  hermes_aec:
+    command: __AEC_RUNTIME_SERVER__
+    args: []
+    enabled: true
   daystrom_dml:
     command: __DML_ROOT__/.venv-dml/bin/python
     args: [-m, dml_mcp.dml_mcp_server, --config, __DML_ROOT__/config/aec-demo.yaml, --storage, __DML_STORE__, --transport, stdio]

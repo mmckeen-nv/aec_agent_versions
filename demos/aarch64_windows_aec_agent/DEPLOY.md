@@ -103,3 +103,6 @@ Continue the same demo; do not import the source model twice.
 
 Existing profile configurations are backed up before replacement. Credentials and generated work
 remain outside Git.
+
+The sidecar release is pinned once in `../hermes-aec-runtime.version`. Maintainers update that
+single file only after the corresponding GitHub release exists and passes both deployment tests.

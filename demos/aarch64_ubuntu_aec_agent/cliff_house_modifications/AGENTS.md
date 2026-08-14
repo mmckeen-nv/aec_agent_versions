@@ -19,6 +19,10 @@ sessions, working files, or outputs.
 Inference configuration is deployment-owned. Never expose credentials or change the selected
 provider/model unless explicitly asked.
 
+The `hermes_aec` sidecar provides host-neutral routing, contracts, proof/receipt, memory,
+recorder, and Blender tools. It does not replace FreeCAD MCP. Never call a `rhino_*` sidecar tool
+on Linux; execute and verify geometry changes through the `freecad` MCP server.
+
 The profile's isolated Daystrom DML store supplies compact procedural recall. Retrieve it
 automatically, but persist only sanitized, validated workflow outcomes. Never store raw
 transcripts, secrets, or unverified claims. CMA is out of scope.

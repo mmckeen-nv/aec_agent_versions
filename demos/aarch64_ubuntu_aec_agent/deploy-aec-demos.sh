@@ -6,17 +6,19 @@ MODEL_ID="${MODEL_ID:-}"
 CONTEXT_LENGTH="${CONTEXT_LENGTH:-262144}"
 
 bash "$PLATFORM_ROOT/memory/install-aec-dml.sh"
+AEC_RUNTIME_SERVER="$(FORCE="${FORCE:-0}" bash "$PLATFORM_ROOT/runtime/install-hermes-aec-runtime.sh" | tail -n 1)"
+[[ -x "$AEC_RUNTIME_SERVER" ]] || { echo 'Hermes AEC runtime installation failed.' >&2; exit 1; }
 
 if [[ -z "$MODEL_ID" ]]; then
   read -r -p 'vLLM served model ID: ' MODEL_ID
 fi
 [[ -n "$MODEL_ID" ]] || { echo 'A model ID is required.' >&2; exit 2; }
 
-MODEL_ID="$MODEL_ID" CONTEXT_LENGTH="$CONTEXT_LENGTH" \
+MODEL_ID="$MODEL_ID" CONTEXT_LENGTH="$CONTEXT_LENGTH" AEC_RUNTIME_SERVER="$AEC_RUNTIME_SERVER" \
   HERMES_PROFILE_NAME=cliff-house-full-build-linux \
   bash "$PLATFORM_ROOT/cliff_house_full_build/platform/linux-dgx-spark/scripts/deploy-hermes-profile.sh"
 
-MODEL_ID="$MODEL_ID" CONTEXT_LENGTH="$CONTEXT_LENGTH" \
+MODEL_ID="$MODEL_ID" CONTEXT_LENGTH="$CONTEXT_LENGTH" AEC_RUNTIME_SERVER="$AEC_RUNTIME_SERVER" \
   HERMES_PROFILE_NAME=cliff-house-modifications-linux \
   bash "$PLATFORM_ROOT/cliff_house_modifications/platform/linux-dgx-spark/scripts/deploy-hermes-profile.sh"
 
@@ -41,5 +43,5 @@ EOF
 create_shortcut 'AEC Full Build.desktop' 'AEC Full Build' full
 create_shortcut 'AEC House Modification.desktop' 'AEC House Modification' modification
 
-echo "AEC_DEMOS_DEPLOYED model=$MODEL_ID context=$CONTEXT_LENGTH"
+echo "AEC_DEMOS_DEPLOYED model=$MODEL_ID context=$CONTEXT_LENGTH runtime=$(tr -d '[:space:]' <"$PLATFORM_ROOT/../hermes-aec-runtime.version")"
 echo 'Use the two new Desktop launchers: AEC Full Build and AEC House Modification.'

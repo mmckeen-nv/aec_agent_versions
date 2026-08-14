@@ -7,8 +7,10 @@ VLLM_BASE_URL="${VLLM_BASE_URL:-http://127.0.0.1:8000/v1}"
 CONTEXT_LENGTH="${CONTEXT_LENGTH:-262144}"
 HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 FORCE="${FORCE:-0}"
+AEC_RUNTIME_SERVER="${AEC_RUNTIME_SERVER:-}"
 
 [[ -n "$MODEL_ID" ]] || { echo 'MODEL_ID is required (the vLLM served model ID).' >&2; exit 2; }
+[[ -x "$AEC_RUNTIME_SERVER" ]] || { echo 'AEC_RUNTIME_SERVER must point to the installed hermes-aec-mcp executable.' >&2; exit 2; }
 [[ "$CONTEXT_LENGTH" =~ ^[0-9]+$ ]] || { echo 'CONTEXT_LENGTH must be an integer.' >&2; exit 2; }
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -39,6 +41,7 @@ sed \
   -e "s|__HOME__|$(escape_sed "$HOME")|g" \
   -e "s|__DML_ROOT__|$(escape_sed "$DML_ROOT")|g" \
   -e "s|__DML_STORE__|$(escape_sed "$DML_STORE")|g" \
+  -e "s|__AEC_RUNTIME_SERVER__|$(escape_sed "$AEC_RUNTIME_SERVER")|g" \
   "$TEMPLATE" >"$CONFIG"
 chmod 0600 "$CONFIG"
 

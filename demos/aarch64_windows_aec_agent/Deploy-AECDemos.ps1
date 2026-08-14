@@ -9,7 +9,9 @@ $ErrorActionPreference = 'Stop'
 $platformRoot = $PSScriptRoot
 $fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
 $quickRoot = Join-Path $platformRoot 'cliff_house_modifications'
-$runtimeVersion = 'v0.4.1'
+$runtimeVersionFile = Join-Path (Split-Path -Parent $platformRoot) 'hermes-aec-runtime.version'
+$runtimeVersion = (Get-Content -Raw -LiteralPath $runtimeVersionFile).Trim()
+if ($runtimeVersion -notmatch '^v\d+\.\d+\.\d+$') { throw "Invalid Hermes AEC runtime pin: $runtimeVersion" }
 
 & (Join-Path $platformRoot 'memory\Install-AECDml.ps1') -Force:$Force
 

@@ -21,6 +21,10 @@ Every deployable demo should provide:
 - provenance identifying the upstream repository and revision;
 - no generated sessions, logs, credentials, outputs, or machine-specific paths.
 
+Both platforms consume the independent `mmckeen-nv/hermes-aec-runtime` release pinned in
+[`hermes-aec-runtime.version`](hermes-aec-runtime.version). Windows keeps Rhino MCP as its geometry
+authority; Linux keeps FreeCAD MCP. The shared sidecar owns the host-neutral execution contract.
+
 ## Do not mix the workflows
 
 | Workflow | Windows/Rhino input | Linux/FreeCAD input | Completed master allowed? |

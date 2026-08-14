@@ -10,6 +10,7 @@ $packages = Get-ChildItem -LiteralPath $demosRoot -Directory | ForEach-Object {
 }
 
 foreach ($required in @(
+  'hermes-aec-runtime.version',
   'aarch64_windows_aec_agent\DEPLOY.md',
   'aarch64_windows_aec_agent\Deploy-AECDemos.ps1',
   'aarch64_windows_aec_agent\Launch-AECDemo.ps1',
@@ -20,12 +21,38 @@ foreach ($required in @(
   'aarch64_ubuntu_aec_agent\DEPLOY.md',
   'aarch64_ubuntu_aec_agent\deploy-aec-demos.sh',
   'aarch64_ubuntu_aec_agent\launch-aec-demo.sh',
+  'aarch64_ubuntu_aec_agent\test-aec-deployment.sh',
+  'aarch64_ubuntu_aec_agent\runtime\install-hermes-aec-runtime.sh',
   'aarch64_ubuntu_aec_agent\memory\install-aec-dml.sh',
   'aarch64_ubuntu_aec_agent\memory\dml.yaml',
   'aarch64_ubuntu_aec_agent\memory\seed_dml.py'
 )) {
   if (-not (Test-Path -LiteralPath (Join-Path $demosRoot $required))) {
     $failures.Add("Missing platform deployment entrypoint: $required")
+  }
+}
+
+$runtimePin = (Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'hermes-aec-runtime.version')).Trim()
+if ($runtimePin -notmatch '^v\d+\.\d+\.\d+$') {
+  $failures.Add("Invalid Hermes AEC runtime pin: $runtimePin")
+}
+foreach ($script in @(
+  'aarch64_windows_aec_agent\Deploy-AECDemos.ps1',
+  'aarch64_windows_aec_agent\Test-AECDeployment.ps1',
+  'aarch64_ubuntu_aec_agent\deploy-aec-demos.sh',
+  'aarch64_ubuntu_aec_agent\test-aec-deployment.sh'
+)) {
+  $content = Get-Content -Raw -LiteralPath (Join-Path $demosRoot $script)
+  if ($content -match "v0\.4\.1") { $failures.Add("Hard-coded runtime pin outside central file: $script") }
+}
+
+foreach ($template in @(
+  'aarch64_ubuntu_aec_agent\cliff_house_full_build\config\hermes\config.template.yaml',
+  'aarch64_ubuntu_aec_agent\cliff_house_modifications\config\hermes\config.template.yaml'
+)) {
+  $content = Get-Content -Raw -LiteralPath (Join-Path $demosRoot $template)
+  if ($content -notmatch '(?m)^  hermes_aec:' -or $content -notmatch '__AEC_RUNTIME_SERVER__') {
+    $failures.Add("Linux profile does not register Hermes AEC runtime: $template")
   }
 }
 

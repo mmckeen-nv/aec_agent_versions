@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [string]$Version = 'v0.4.1',
+  [Parameter(Mandatory)][ValidatePattern('^v\d+\.\d+\.\d+$')][string]$Version,
   [int]$RhinoPort = 10500,
   [switch]$Force
 )
@@ -37,4 +37,3 @@ if (-not (Test-Path -LiteralPath (Join-Path $resolvedTarget 'Install.ps1'))) {
 @{ version = $Version; root = $resolvedTarget; installed_at = (Get-Date).ToUniversalTime().ToString('o') } |
   ConvertTo-Json | Set-Content -LiteralPath (Join-Path $integrationRoot 'active.json') -Encoding utf8NoBOM
 Write-Host "HERMES_AEC_RUNTIME_READY version=$Version root=$resolvedTarget"
-

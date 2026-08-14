@@ -44,6 +44,11 @@ must begin from a clean FreeCAD working document, reconstruct the immutable sour
 Never load or import the checked-in completed FreeCAD master, STEP source, hero Rhino file, pool
 OBJ files, or quick Blender master as construction geometry.
 
+The `hermes_aec` sidecar is shared infrastructure, not the Linux geometry bridge. Use its
+host-neutral request routing, contracts, proof/receipt, memory, recorder, and Blender tools when
+available. Never call a `rhino_*` sidecar tool on Linux; execute and verify model changes through
+the `freecad` MCP server.
+
 ## Startup behavior
 
 For Phase 00:

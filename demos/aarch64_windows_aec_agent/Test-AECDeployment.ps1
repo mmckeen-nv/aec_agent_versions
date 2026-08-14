@@ -3,6 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $failures = [System.Collections.Generic.List[string]]::new()
+$runtimeVersion = (Get-Content -Raw -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'hermes-aec-runtime.version')).Trim()
 $desktop = [Environment]::GetFolderPath('Desktop')
 $hermesCommand = Get-Command hermes -ErrorAction SilentlyContinue
 $bundledHermes = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\venv\Scripts\hermes.exe'
@@ -15,7 +16,7 @@ $checks = [ordered]@{
   'Full-build profile' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\profiles\cliff-house-full-build-windows\config.yaml')
   'Modification profile' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\profiles\cliff-house-modifications-windows\config.yaml')
   'Daystrom DML runtime' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\daystrom-dml\.venv-dml\Scripts\python.exe')
-  'Hermes AEC runtime v0.4.1' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\hermes-aec-runtime\v0.4.1\.venv\Scripts\hermes-aec-mcp.exe')
+  "Hermes AEC runtime $runtimeVersion" = Test-Path (Join-Path $env:LOCALAPPDATA "hermes\integrations\hermes-aec-runtime\$runtimeVersion\.venv\Scripts\hermes-aec-mcp.exe")
   'Full-build memory seed' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\daystrom-dml\stores\cliff-house-full-build-windows\.aec-seed.json')
   'Modification memory seed' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\daystrom-dml\stores\cliff-house-modifications-windows-bounded-v2\.aec-seed.json')
   'AEC Full Build shortcut' = Test-Path (Join-Path $desktop 'AEC Full Build.lnk')

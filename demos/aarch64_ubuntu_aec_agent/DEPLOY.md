@@ -7,11 +7,12 @@ bash ./deploy-aec-demos.sh
 ```
 
 Requirements: Hermes Desktop for Linux must be installed as `hermes-desktop` (or its path supplied
-as `HERMES_DESKTOP_BIN`), along with Git, Python 3.10+, FreeCAD, FreeCAD MCP, local vLLM, and an
+as `HERMES_DESKTOP_BIN`), along with Git, curl, tar, Python 3.11+, FreeCAD, FreeCAD MCP, local vLLM, and an
 NVIDIA GPU runtime. Internet access is required for the first Daystrom DML installation. DML does
 not require Ollama, an embedding model, CMA, or another inference model in this package.
 
-The installer asks for the model ID served by local vLLM, installs the pinned Daystrom DML runtime,
+The installer asks for the model ID served by local vLLM, installs the pinned Daystrom DML runtime
+and the independently versioned Hermes AEC sidecar,
 seeds separate compact procedural-memory stores, deploys two isolated Hermes profiles, and creates
 two launchers on the desktop:
 
@@ -23,3 +24,15 @@ existing deployment after pulling changes, run `FORCE=1 bash ./deploy-aec-demos.
 
 Both launchers open the Hermes graphical desktop UI. They do not expose a terminal or Hermes TUI.
 Memory retrieval is automatic; the operator does not need to mention DML.
+
+FreeCAD MCP remains the geometry authority on Linux. The sidecar supplies the shared routing,
+transaction, proof, memory, and recorder contract and does not replace the FreeCAD bridge.
+
+Verify the deployed profiles and both desktop launchers with:
+
+```bash
+bash ./test-aec-deployment.sh
+```
+
+The final line must be `AEC_DEPLOYMENT_PASS`. The shared release pin lives only in
+`../hermes-aec-runtime.version`; change it only after that GitHub release exists and is validated.
