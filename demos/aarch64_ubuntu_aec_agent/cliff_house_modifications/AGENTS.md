@@ -8,9 +8,12 @@ This package is the quick modification demo. It is isolated from `cliff_house_fu
    `demo/cliff-house/cliff_house_FREECAD_MASTER.FCStd` with
    `platform/linux-dgx-spark/scripts/prepare-working-copy.sh`.
 2. Open only the generated working copy through FreeCAD MCP.
-3. Audit object counts, validity, bounds, and semantic properties before modification.
-4. Apply only the operator-requested bounded change.
-5. Re-audit and report the exact changed objects and invariants.
+3. Route the request with the host-neutral sidecar when available, then audit the narrowest useful
+   set of FreeCAD objects, including counts, validity, bounds, and semantic properties.
+4. Apply only the operator-requested bounded change through FreeCAD MCP. Prefer typed operations;
+   use one reviewed `execute_code` transaction only when the bridge has no typed equivalent.
+5. Recompute, re-audit request-specific invariants, save the working copy, and report exact changed
+   objects. A viewport is supporting evidence, not geometry proof.
 
 Never mutate the checked-in `.FCStd`, STEP, Rhino, OBJ, or Blender masters. Never reconstruct the
 whole house in this workflow. Do not read or update the full-build profile, project, phase state,

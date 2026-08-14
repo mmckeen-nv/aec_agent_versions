@@ -53,16 +53,17 @@ Use this first.
 2. The launcher creates and opens a timestamped copy of the completed Rhino house. It never edits
    the checked-in hero model.
 3. Ensure Rhino MCP is running.
-4. Enter this in Hermes:
+4. Enter a concise outcome request in Hermes, for example:
 
    ```text
-   Audit the open working copy. Make the west-facing second-floor balcony 500 mm deeper. Preserve
-   every other object, validate the result, and report exactly what changed.
+   Audit the open working copy. Move the selected canopy 300 mm east. Preserve every other object,
+   validate the result, and report exactly what changed.
    ```
 
 Success means Hermes recalls the Rhino execution recipe, audits the scene, performs the Rhino MCP
 operation through `rhino_scene_query`, `rhino_apply_operations`, and
 `rhino_verify_transaction`, and verifies that only the intended working-copy geometry changed.
+For another task, use the same four-part request: target, desired result, constraints, and evidence.
 
 ## Test 2 — complete house build
 

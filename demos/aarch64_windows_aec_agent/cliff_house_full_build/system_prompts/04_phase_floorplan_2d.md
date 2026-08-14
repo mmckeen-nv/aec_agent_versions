@@ -276,21 +276,22 @@ RhinoApp.RunScript("_Plan _World", false);  // top-down view
 
 ---
 
-## Script Runner Pattern
+## Runtime transaction pattern
 
-Send C# directly through `mcp__rhino__run_csharp` on the configured Rhino MCP. Do not create a
-Node runner, call the MCP endpoint through terminal HTTP, or substitute filesystem execution.
-Use the exact argument schema exposed by `mcp__rhino__run_csharp`.
+Treat the snippets above as geometry and presentation intent, not as a raw-tool instruction.
+Capture the scene revision with `rhino_scene_query`, express each reviewed plan unit with
+`rhino_apply_operations`, and prove it with `rhino_verify_transaction`. Do not create a Node
+runner, call MCP through terminal HTTP, or substitute filesystem or UI execution.
 
-**Chunk scripts that exceed ~60 lines of C# content.**
-The RhinoMCP C# engine handles long scripts but splitting by logical step
-(layers, rooms, site features) makes debugging much easier.
+If a required annotation or presentation operation is absent from the typed catalog, the Full
+Build profile may use one bounded transactional `rhino_execute_python` operation. Checkpoint it,
+keep it scoped to one reviewed unit, and apply the same before/after verification.
 
 ---
 
 ## Output to File (for debugging)
 
-Return concise audit values from the C# tool when supported. If file diagnostics are unavoidable,
+Return concise audit values from the sidecar receipt and focused scene queries. If file diagnostics are unavoidable,
 write beneath the active profile using a resolved path, never a machine-specific author path.
 
 ```csharp

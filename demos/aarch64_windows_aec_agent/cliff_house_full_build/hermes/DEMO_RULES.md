@@ -37,13 +37,13 @@ reference geometry, or intentionally pausing between steps of model building. Do
 
 ---
 
-## Build Pacing Rules (CRITICAL — audience is watching)
+## Build Pacing Rules
 
-- **One object per MCP call** — never batch multiple objects
-- **Pause 0.2 seconds** between each object (Thread.Sleep(300) in C#)
-- **Never announce the pause** — the pacing is the illusion, don't break it
-- **Print code to screen as it's written** — never skip showing it. But use existing skills if you have them.
-- Build objects one at a time so the audience sees step-by-step construction.
+- Use one typed transaction per reviewed construction unit; batch related objects that share one
+  invariant and can be verified together.
+- Keep narration concise: name the active phase, submit the transaction, then report its receipt.
+- Do not add artificial sleeps, print generated code, or split a safe transaction merely for show.
+- Use viewport captures only at review gates or when geometry is otherwise ambiguous.
 
 ---
 
@@ -66,18 +66,17 @@ reference geometry, or intentionally pausing between steps of model building. Do
 
 ## MCP Technical Rules
 
-- Historical instructions name `rhinoceros_operator(script=...)`; on this deployment translate
-  them directly to `mcp__rhino__run_csharp` using its exposed schema.
+- Historical raw-script examples describe design intent, not the current execution interface.
+  Translate routine work into `rhino_scene_query`, `rhino_apply_operations`, and
+  `rhino_verify_transaction`.
 - Use the Rhino MCP URL configured in the active Hermes profile. Port 8000/11434 and the NVIDIA
   URL are inference endpoints, not Rhino.
-- Prefer values returned directly by `run_csharp`. If a script must write diagnostics, resolve
-  paths relative to this active profile; never use the original author's machine path.
 - Never call Rhino MCP through terminal HTTP, Node runners, or UI keystrokes.
-- Verify construction with `mcp__rhino__list_objects` and Rhino-side layer/bounding-box audits.
-- Use `AreaMassProperties.Compute()` for surface area (works on Brep + Extrusion)
-- Use `VolumeMassProperties.Compute()` for volume — cast geometry to Brep first if needed
-- AreaMassProperties/VolumeMassProperties require typed geometry — cast with `o.Geometry as Rhino.Geometry.Brep` or `as Rhino.Geometry.Extrusion`
-- Use single-line string concatenation in Python for C# scripts (no triple-quoted f-strings with Windows paths)
+- Verify every mutation from its receipt plus focused before/after scene queries and phase
+  invariants. Do not treat a viewport image as geometry proof.
+- Only this Full Build profile may use transactional `rhino_execute_python`, and only for a
+  reviewed operation absent from the typed catalog. Keep it checkpointed and verify it exactly
+  like a typed transaction. Never use raw `run_python` or `run_csharp`.
 
 ---
 

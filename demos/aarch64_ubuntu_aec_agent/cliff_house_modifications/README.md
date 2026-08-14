@@ -17,6 +17,11 @@ platform/linux-dgx-spark/scripts/prepare-working-copy.sh
 Then start FreeCAD and its MCP bridge, open the emitted working-copy path, and launch Hermes with
 profile `cliff-house-modifications-linux`.
 
+In the Hermes UI, request the outcome directly. For example: `Audit the working copy, move the
+selected canopy 300 mm east, preserve everything else, validate the result, and report exactly
+what changed.` The same concise pattern works for any bounded edit: target, desired result,
+constraints, and required evidence. FreeCAD remains authoritative for geometry.
+
 ## Safety contract
 
 - `cliff_house_FREECAD_MASTER.FCStd` is the completed quick-demo source and is immutable.

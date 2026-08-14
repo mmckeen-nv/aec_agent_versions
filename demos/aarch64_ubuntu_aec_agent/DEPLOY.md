@@ -25,6 +25,11 @@ existing deployment after pulling changes, run `FORCE=1 bash ./deploy-aec-demos.
 Both launchers open the Hermes graphical desktop UI. They do not expose a terminal or Hermes TUI.
 Memory retrieval is automatic; the operator does not need to mention DML.
 
+To test **AEC House Modification**, enter a direct request such as: `Audit the working copy, move
+the selected canopy 300 mm east, preserve everything else, validate the result, and report exactly
+what changed.` Substitute any target and bounded result; include constraints and required evidence.
+To test **AEC Full Build**, enter: `Start the cliff house full build.`
+
 FreeCAD MCP remains the geometry authority on Linux. The sidecar supplies the shared routing,
 transaction, proof, memory, and recorder contract and does not replace the FreeCAD bridge.
 
