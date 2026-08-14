@@ -207,8 +207,16 @@ for i in range(3): box("ENTRY_STEP_%02d"%i,"AEC_HOUSE::STAIRS",13.5+i*0.35,-1.2,
 for i,(y0,y1) in enumerate(((5.0,8.8),(9.2,13.0))):
     box("GARAGE_DOOR_%02d"%(i+1),"AEC_HOUSE::GARAGE",16.86,y0,0.55,17.05,y1,3.25,COLORS["bronze"])
 
-# Infinity pool and west patio using the source-plan extents.
-box("PATIO_CONCRETE","AEC_HOUSE::SITE",-5.8,-16.8,-0.05,4.8,13.8,0.15,COLORS["slab"])
+# Infinity pool and west patio using the source-plan extents. Keep the patio
+# as four deterministic solids around the pool opening; a single slab here
+# intersects and visually hides the water.
+for patio_name, patio_bounds in [
+    ("PATIO_CONCRETE_SOUTH", (-5.8,-16.8,-0.05,4.8,-14.0,0.15)),
+    ("PATIO_CONCRETE_NORTH", (-5.8,5.0,-0.05,4.8,13.8,0.15)),
+    ("PATIO_CONCRETE_WEST", (-5.8,-14.0,-0.05,-5.62,5.0,0.15)),
+    ("PATIO_CONCRETE_EAST", (0.2,-14.0,-0.05,4.8,5.0,0.15)),
+]:
+    box(patio_name, "AEC_HOUSE::SITE", *(patio_bounds + (COLORS["slab"],)))
 box("INFINITY_POOL_SHELL","AEC_HOUSE::POOL",-5.6,-14.0,-0.70,0.2,5.0,0.05,COLORS["concrete"])
 box("INFINITY_POOL_WATER","AEC_HOUSE::POOL",-5.45,-13.85,0.03,0.05,4.85,0.12,COLORS["water"])
 box("INFINITY_POOL_BRONZE_EDGE","AEC_HOUSE::BRONZE_FRAMES",-5.62,-14.0,0.08,-5.48,5.0,0.18,COLORS["bronze"])

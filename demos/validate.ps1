@@ -114,7 +114,7 @@ $quickContracts = @(
     Name = 'Windows quick modifications'
     Root = Join-Path $demosRoot 'aarch64_windows_aec_agent\cliff_house_modifications'
     Master = 'demo\cliff-house\cliff_house_GOLDEN_MASTER.3dm'
-    Hash = 'D7DB42D78B360C66D94E1E034C201EDD98EFF8F63F35B19C7995E7D1B63F4F7C'
+    Hash = 'B45D8F7A7262DBEC4F077007A17701A29281C00F0B17394A20745ED981C1BB05'
     Required = @('AGENTS.md', 'config\hermes\config.template.yaml', 'installer\Deploy-HermesProfile.ps1', 'installer\New-WorkingCopy.ps1')
   },
   @{
