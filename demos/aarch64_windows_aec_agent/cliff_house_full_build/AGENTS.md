@@ -13,7 +13,7 @@ Treat “start the cliff house build,” “run the full build,” “build the 
 2. `system_prompts/WINDOWS_WORKSPACE_RULES.md`
 3. `hermes/DEMO_RULES.md`
 4. `hermes/phase_state.json`
-5. `projects/cliff_house_01/user_prompts/project_prompt.md`
+5. `projects/cliff_house_02/user_prompts/project_prompt.md`
 6. the active phase prompt under `system_prompts/`
 
 Begin Phase 00 or resume the next incomplete phase represented by a valid receipt. State the
@@ -21,14 +21,14 @@ selected phase and perform its read-only preflight. Do not mutate geometry befor
 
 ## Pipeline
 
-1. Rhino MCP creates and validates the architectural model from an empty document.
+1. Rhino MCP imports the source-curve model from `projects/cliff_house_02/rhino_assets/base_model.3dm`, then creates and validates the architectural model.
 2. Phase 07 transfers audited geometry and metadata to Blender.
 3. Blender MCP assembles materials, cameras, lighting, and renders.
 4. ComfyUI performs geometry-locked architectural visualization.
 5. Each phase emits the receipt required by the active prompt.
 
-Never load or import the checked-in hero Rhino file, quick Blender master, or another completed
-model as a full-build shortcut.
+Never load a completed hero Rhino file, quick Blender master, or another completed model as a
+full-build shortcut. The source-curve `base_model.3dm` is required input, not a completed model.
 
 ## OOBE and safety
 
@@ -40,4 +40,6 @@ model as a full-build shortcut.
 - Preserve units, axes, semantic names, layer paths, identifiers, materials, and placements.
 - ComfyUI output is visualization, not verified geometry.
 - Never expose secrets or unrelated files.
-- DML and CMA are out of scope.
+- The profile's isolated Daystrom DML store supplies compact procedural recall. Persist only
+  sanitized, validated workflow outcomes; never raw transcripts, secrets, or unverified claims.
+  CMA is out of scope.

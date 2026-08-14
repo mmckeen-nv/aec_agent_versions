@@ -1,8 +1,8 @@
 # Cliff House full build — Windows ARM64
 
-The original phase-driven NVIDIA AEC workflow for Hermes Desktop, Rhino 8, Blender, and ComfyUI
-on Windows ARM64. It is isolated from the quick-modification demo and begins with an empty Rhino
-document rather than a protected master.
+An easy-to-deploy Hermes adaptation of the original phase-driven NVIDIA AEC workflow for Rhino 8,
+Blender, and ComfyUI on Windows ARM64. It is isolated from the quick-modification demo and begins
+from Wagstaff's source-curve `base_model.3dm`; it never substitutes a completed hero model.
 
 ```text
 User-selected inference <-> Hermes Desktop (after OOBE)
@@ -13,15 +13,22 @@ User-selected inference <-> Hermes Desktop (after OOBE)
 
 ## Start here
 
-1. Follow the numbered [INSTALL GUIDE](INSTALL%20GUIDE/README.md).
-2. Complete normal Hermes OOBE and select the inference provider yourself.
-3. Register this directory as `cliff-house-full-build-windows` in a dedicated profile/project.
-4. Start Rhino, Blender, ComfyUI, and their loopback MCP bridges.
+1. Complete Hermes OOBE and create a dedicated profile.
+2. Deploy this package into it:
+
+   ```powershell
+   .\installer\Deploy-HermesProfile.ps1 -Profile cliff-house-full-build-windows -RhinoPort 10500
+   ```
+
+3. Start Rhino, Blender, ComfyUI, and their loopback MCP bridges.
+4. Run `.\installer\Test-LocalAEC.ps1 -Profile cliff-house-full-build-windows`.
 5. Tell Hermes: `Start the cliff house build.`
 
-Hermes reads `AGENTS.md`, the project brief, phase state, skills, and the original active prompt
-under `system_prompts/`. Generated geometry, scenes, renders, receipts, and logs belong under
-ignored `work/` or `outputs/` directories.
+Hermes reads `AGENTS.md`, `projects/cliff_house_02/user_prompts/project_prompt.md`, phase state,
+skills, and the active prompt under `system_prompts/`. The Rhino source file is
+`projects/cliff_house_02/rhino_assets/base_model.3dm`. Generated files belong under ignored
+`work/` or `outputs/` directories.
 
-No provider, model, endpoint, credential, profile, or MCP registration is baked into this package.
-DML and CMA are intentionally excluded.
+The repository contains a credential-free NVIDIA Responses API template. Deployment never writes
+an API key: set `NVIDIA_API_KEY` in the profile environment or through Hermes' secret UI. Provider,
+model, endpoint, context length, and Rhino port remain command-line parameters.

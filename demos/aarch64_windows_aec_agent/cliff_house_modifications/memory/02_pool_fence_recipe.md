@@ -1,0 +1,4 @@
+memory_summary: Construct and validate a pool safety fence as one deterministic RhinoPython change.
+memory_class: procedural_tool_call
+
+For a pool fence request, use one `run_csharp` audit filtered to pool/water/shell/deck/terrace objects and nearby geometry; return compact IDs, names, layers, and bounds only. Derive the path from those shapes rather than guessing coordinates. In one `run_python` call, create or reuse `AEC::Safety::Pool Fence`, generate consistently spaced posts and rails/panels, and create a clearly named gate with usable clearance outside the pool boundary and circulation. In one validation call require that fence XY bounds surround the pool, every new object is on the intended layer, the gate exists, no pre-existing object disappeared, and the object-count delta matches the created IDs. Capture one final viewport, save the timestamped working copy, report evidence, and stop.

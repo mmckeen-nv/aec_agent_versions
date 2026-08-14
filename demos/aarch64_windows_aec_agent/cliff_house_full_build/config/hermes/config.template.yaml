@@ -1,0 +1,70 @@
+model:
+  provider: custom:nvidia-switchyard
+  default: switchyard/openai/gpt-5.6-sol
+  base_url: https://inference-api.nvidia.com/v1
+  api_key: ${NVIDIA_API_KEY}
+  context_length: 1000000
+
+providers:
+  nvidia-switchyard:
+    name: nvidia-switchyard
+    base_url: https://inference-api.nvidia.com/v1
+    key_env: NVIDIA_API_KEY
+    default_model: switchyard/openai/gpt-5.6-sol
+    api_mode: codex_responses
+    context_length: 1000000
+
+agent:
+  service_tier: fast
+  reasoning_effort: medium
+
+memory:
+  memory_enabled: true
+  provider: daystrom_dml
+  nudge_interval: 0
+  daystrom_dml:
+    integration_dir: __DML_ROOT__
+    launcher: __DML_ROOT__/bin/hermes-dml-memory.cmd
+    venv_python: __DML_ROOT__/.venv-dml/Scripts/python.exe
+    source_dir: __DML_ROOT__/source
+    storage_dir: __DML_STORE__
+    config_path: __DML_ROOT__/config/aec-demo.yaml
+    retrieval_policy: always
+    enable_memory: true
+    enable_personality: false
+    sync_turns: false
+    top_k: 6
+    max_context_chars: 2400
+    preflight_strict: true
+    timeout_seconds: 30
+    project_id: project:cliff-house-full-build-windows
+    dcn:
+      mode: active_read
+
+tools:
+  tool_search:
+    enabled: "off"
+
+plugins:
+  enabled:
+    - daystrom_dml
+
+mcp_servers:
+  daystrom_dml:
+    command: __DML_ROOT__/.venv-dml/Scripts/python.exe
+    args: [-m, dml_mcp.dml_mcp_server, --config, __DML_ROOT__/config/aec-demo.yaml, --storage, __DML_STORE__, --transport, stdio]
+    enabled: true
+  rhino:
+    url: http://127.0.0.1:__RHINO_PORT__/
+    connect_timeout: 30
+    timeout: 320
+    enabled: true
+    tools:
+      include:
+        - get_viewport_image
+        - list_objects
+        - open_doc
+        - run_command
+        - run_csharp
+        - run_python
+        - save_doc

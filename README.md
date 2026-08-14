@@ -19,4 +19,7 @@ assets, validation instructions, and third-party notices.
 - Document platform-specific setup and acceptance checks inside each demo's `INSTALL GUIDE/`.
 - Pin third-party revisions used by deployment scripts and record their licenses.
 
-See the individual demo README before installation.
+Start here:
+
+- [Windows requirements, deployment, and test checklist](demos/aarch64_windows_aec_agent/DEPLOY.md)
+- [Linux/DGX requirements and deployment](demos/aarch64_ubuntu_aec_agent/DEPLOY.md)

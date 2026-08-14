@@ -1,0 +1,24 @@
+capacity: 256
+dml_top_k: 6
+token_budget: 2400
+dml_context_summary_chars: 2200
+embedding_model: null
+strict_embedding_required: false
+llm_backend: auto
+model_name: dummy
+strict_llm_required: false
+ingest_persist_mode: dml_only
+mirror_agentic_memory_to_rag: false
+skip_rag_state_import: true
+persistence:
+  enable: true
+  path: ./dml_state.jsonl
+  interval_sec: 0
+rag_store:
+  enable: false
+dpm:
+  enable: false
+agentic_mode:
+  enabled: true
+  schema_validation: true
+  promotion_pipeline: false

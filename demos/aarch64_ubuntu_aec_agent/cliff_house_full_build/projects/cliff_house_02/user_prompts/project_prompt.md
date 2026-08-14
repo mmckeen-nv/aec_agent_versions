@@ -9,15 +9,15 @@
      don't delete them.
 
      THREE WAYS TO FILL THIS IN:
-
+     
      1. TYPE IT YOURSELF
         Just click into any "Your answer:" line and type.
         No special formatting required. Write naturally.
-
+     
      2. SPEAK IT (voice recognition)
         Works perfectly. Just say your answer out loud after
         "Your answer:" — no punctuation or special words needed.
-
+     
      3. INTERVIEW MODE
         Tell Hermes: "Interview me about my project."
         Hermes will read each section to you and ask the question.
@@ -32,7 +32,7 @@
        is fine. A full sentence is also fine.
 
      EXAMPLE OF A FILLED-IN SECTION:
-
+     
      // What material are the retaining walls?
      // 💡 Example:  smooth dark concrete
      // 💡 Example:  rough-cut stacked granite blocks
@@ -63,7 +63,7 @@ Your answer:  Modernist cliff house — variant of cliff_house_01. Dramatic cant
 // What is the project name? Used for folder names and file labels.
 // Keep it short. Lowercase letters and underscores only. No spaces.
 
-Your answer:  cliff_house_01
+Your answer:  cliff_house_02
 
 
 // Who is this project for? (Optional — used for greetings and sign-offs)
@@ -503,11 +503,11 @@ Your answer:  [FILL IN]
 ---
 <!-- ============================================================
      DO NOT FILL THIS SECTION IN YOURSELF.
-
+     
      Hermes reads your Rhino scene and fills this in automatically
      during Phase 0 setup. Each element Hermes finds in the scene
      gets an entry here, confirmed with you during the interview.
-
+     
      If you are starting without a Rhino scene yet, Hermes will
      help you create one during setup.
      ============================================================ -->
@@ -562,7 +562,7 @@ terrain_drop:             8m west-to-east  (Z=0 at east edge, Z=-8 at west)
      This section tracks all visual references for this project.
      Hermes reads these during the design interview and uses them
      to inform material choices, atmosphere, and style decisions.
-
+     
      Hermes fills this in during Phase 0 setup.
      You can add to it at any time during the project by saying:
      "Add this reference: [url or file path]"
@@ -605,3 +605,5 @@ interview. Key stated directions: white ashlar stone walls, dark charcoal
 plinth, bronze anodised frames, lightly tinted glass, cable railings,
 west-facing ocean views prioritised, modernist cliff house aesthetic,
 cantilevered floors stepping west, infinity pool with bronze edge.
+
+

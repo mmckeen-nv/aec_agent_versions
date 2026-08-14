@@ -35,7 +35,7 @@ will be derived from explicit room geometry.
 ## Pre-Phase Audit Checklist
 
 - [ ] Rhino document is open and units are set to metres
-- [ ] RhinoMCP server running on port 3001
+- [ ] Rhino MCP server configured in the active Hermes profile and passing `hermes mcp test rhino`
 - [ ] Node.js runner template ready (see Script Runner Pattern below)
 - [ ] Delta notes read for site dimensions and room programme
 - [ ] Coordinate origin confirmed (typically building SW corner or plan centre)
@@ -278,38 +278,9 @@ RhinoApp.RunScript("_Plan _World", false);  // top-down view
 
 ## Script Runner Pattern
 
-Scripts are written to disk and executed via a Node.js runner.
-This avoids MCP connection timeouts on long-running scripts.
-
-```javascript
-// runner.mjs
-import { readFileSync } from "fs";
-const B = "http://localhost:3001/mcp";
-const H = { "Content-Type": "application/json",
-             "Accept": "application/json, text/event-stream" };
-let id = 1;
-async function mcp(m, p = {}) {
-    const r = await fetch(B, { method:"POST", headers:H,
-        body: JSON.stringify({ jsonrpc:"2.0", id:id++, method:m, params:p }) });
-    const t = await r.text();
-    const a = [];
-    for (const l of t.split("\n"))
-        if (l.startsWith("data:")) try { a.push(JSON.parse(l.slice(5))); } catch {}
-    return a[a.length-1] || {};
-}
-await mcp("initialize", { protocolVersion:"2024-11-05",
-    capabilities:{}, clientInfo:{ name:"hermes", version:"1.0" } });
-await fetch(B, { method:"POST", headers:H,
-    body: JSON.stringify({ jsonrpc:"2.0", method:"notifications/initialized" }) });
-
-const script = readFileSync("C:/path/to/script.cs", "utf8");
-const r = await mcp("tools/call",
-    { name:"rhinoceros_operator", arguments:{ script } });
-console.log(r?.result?.isError ? "FAIL" : "OK",
-    r?.result?.content?.[0]?.text?.substring(0,120) || "");
-```
-
-Run from terminal: `node runner.mjs`
+Send C# directly through `mcp__rhino__run_csharp` on the configured Rhino MCP. Do not create a
+Node runner, call the MCP endpoint through terminal HTTP, or substitute filesystem execution.
+Use the exact argument schema exposed by `mcp__rhino__run_csharp`.
 
 **Chunk scripts that exceed ~60 lines of C# content.**
 The RhinoMCP C# engine handles long scripts but splitting by logical step
@@ -319,12 +290,12 @@ The RhinoMCP C# engine handles long scripts but splitting by logical step
 
 ## Output to File (for debugging)
 
-`RhinoApp.WriteLine` output does NOT return through MCP.
-Use `System.IO.File.WriteAllText` to inspect values:
+Return concise audit values from the C# tool when supported. If file diagnostics are unavoidable,
+write beneath the active profile using a resolved path, never a machine-specific author path.
 
 ```csharp
 System.IO.File.WriteAllText(
-    @"<WORKSPACE_ROOT>\work\<run-id>\debug.txt",
+    @"C:\Users\swags\Documents\AEC_demo_v2\debug.txt",
     "Layer count: " + doc.Layers.Count + "\nObjects: " + doc.Objects.Count);
 ```
 

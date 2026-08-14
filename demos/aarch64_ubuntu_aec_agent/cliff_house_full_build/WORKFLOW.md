@@ -18,7 +18,7 @@ workflow is NVIDIA's [`stwagstaff/2026_aec_cptx_demo`](https://github.com/stwags
 
 | Stage | Included implementation | Receipt or invariant | State |
 |---|---|---|---|
-| Empty-document FreeCAD build | `scripts/run_full_build_mcp.py` | Per-object phase receipts | **Validated** |
+| Source-guided FreeCAD build | `scripts/run_full_build_mcp.py` | Reference hash plus per-object phase receipts | **Implementation updated; DGX revalidation required** |
 | Pool construction | `scripts/run_full_build_mcp.py` | `PHASE_06_OBJECT_PASS` | **Validated** |
 | Geometry audit and metadata | Generated manifest plus receipts | Named roles, levels, constraints, and hashes | **Validated** |
 | FreeCAD → Blender handoff | Explicit tessellation plus `scene_manifest.json` | Hashed geometry bundle | **Validated** |
@@ -36,11 +36,12 @@ now pinned under `upstream/stwagstaff-2026-aec-cptx-demo/`. Active phase wrapper
 
 `AGENTS.md` recognizes “start the cliff house build,” loads the active phase state and original
 source prompt, and prohibits the hero/master/STEP/OBJ/Blend assets as construction shortcuts.
-The full-build workflow starts from an empty FreeCAD document.
+The full-build workflow starts from a clean FreeCAD document and reconstructs the immutable
+Wagstaff source curves from the pinned JSON manifest before creating target geometry.
 
 ## Remaining ComfyUI port
 
-The visible MCP runner now provides the deterministic empty-document FreeCAD build and
+The visible MCP runner now provides the deterministic source-guided FreeCAD build and
 FreeCAD-to-Blender handoff without using protected reference assets. One downstream piece is not
 self-contained yet: `comfyui_flux2_direct.py` imports `comfyui_vp_stylize.py` from a separate
    `virtual_production_studio` demo that is not in this repository.

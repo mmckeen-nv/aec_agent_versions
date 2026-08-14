@@ -8,7 +8,9 @@
 - `cliff_house_POOL_SHELL.obj` and `cliff_house_POOL_WATER.obj` preserve the two
   Rhino meshes omitted by STEP.
 
-Treat both files as read-only. Create working copies before any mutation. The companion
+Treat these completed-model assets as read-only. They are comparison and migration references,
+not full-build construction inputs. The full build instead reconstructs the upstream source
+guides from `projects/cliff_house_02/freecad_reference/source_curves.json`. The companion
 `scripts/blender_cliff_quick.py` helper validates the Blender master hash, object counts,
 materials, and cameras before opening a generated working copy.
 

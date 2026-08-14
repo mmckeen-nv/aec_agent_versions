@@ -1,8 +1,8 @@
 # Cliff House modifications — Windows ARM64
 
-The quick live-demo workflow for controlled, reversible edits to protected Cliff House Rhino and
-Blender masters. Hermes Desktop completes normal OOBE before this workspace is attached to a
-user-selected profile.
+The short live demo: Hermes opens a generated working copy of the completed Cliff House Rhino
+master and makes bounded operator-requested changes. It does not rebuild the house; that is the
+separate `cliff_house_full_build` workflow.
 
 ```text
 User-selected inference <-> Hermes Desktop
@@ -13,12 +13,21 @@ User-selected inference <-> Hermes Desktop
 
 ## Start here
 
-1. Follow the numbered [INSTALL GUIDE](INSTALL%20GUIDE/README.md).
-2. Complete Hermes OOBE without repository-provided settings.
-3. Register this directory as `cliff-house-modifications-windows` in the profile you selected.
-4. Create timestamped working copies from the protected masters.
-5. Start Rhino, Blender, ComfyUI, and the required loopback MCP bridges.
+1. Complete Hermes OOBE and deploy the isolated profile:
 
-No installer writes a Hermes provider, model, endpoint, API key, active profile, or desktop
-configuration. DML/CMA, Mission Control, application binaries, model weights, runtime state,
-logs, caches, and credentials are excluded.
+   ```powershell
+   .\installer\Deploy-HermesProfile.ps1 -Profile cliff-house-modifications-windows -RhinoPort 10500
+   ```
+
+2. Create a verified timestamped working copy:
+
+   ```powershell
+   .\installer\New-WorkingCopy.ps1
+   ```
+
+3. Open only the emitted working-copy path in Rhino.
+4. Start Rhino, Blender, ComfyUI, and the required loopback MCP bridges.
+
+The deployer writes a credential-free inference/MCP profile and never stores an API key. The
+checked-in `HERO` and `MASTER` assets remain immutable. DML/CMA, model weights, runtime state,
+logs, caches, credentials, and generated working copies are excluded.

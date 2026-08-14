@@ -20,7 +20,7 @@ On a start request, do not ask the operator what "Cliff House" means. Read, in o
 2. `system_prompts/PORT_FREECAD.md`
 3. `hermes/DEMO_RULES.md`
 4. `hermes/phase_state.json`
-5. `projects/cliff_house_01/user_prompts/project_prompt.md`
+5. `projects/cliff_house_02/user_prompts/project_prompt.md`
 6. the active wrapper and its upstream source prompt
 
 Then begin Phase 00 (or resume the next incomplete phase represented by a valid receipt).
@@ -38,10 +38,11 @@ The intended end-to-end workflow is:
 5. ComfyUI performs geometry-locked architectural post-processing.
 6. Each completed phase emits the receipt defined in `PLAYBOOK.md`.
 
-FreeCAD replaces Rhino in this workflow. Do not invoke Rhino or a Rhino MCP server. Phases
-00–06 must begin from an empty FreeCAD working document and build from the prompt suite. Never
-load or import the checked-in FreeCAD master, STEP source, hero Rhino file, pool OBJ files, or
-quick Blender master as a shortcut.
+FreeCAD replaces Rhino in this workflow. Do not invoke Rhino or a Rhino MCP server. Phases 00–06
+must begin from a clean FreeCAD working document, reconstruct the immutable source guides from
+`projects/cliff_house_02/freecad_reference/source_curves.json`, and build from the prompt suite.
+Never load or import the checked-in completed FreeCAD master, STEP source, hero Rhino file, pool
+OBJ files, or quick Blender master as construction geometry.
 
 ## Startup behavior
 
@@ -69,7 +70,9 @@ artifact is missing, report the exact blocker and stop at the appropriate gate.
   across FreeCAD and Blender.
 - ComfyUI output is visualization, not verified geometry.
 - Never expose API keys, tokens, credentials, or unrelated files.
-- DML and CMA are out of scope and must not be installed or invoked.
+- The profile's isolated Daystrom DML store supplies compact procedural recall. Persist only
+  sanitized, validated workflow outcomes; never raw transcripts, secrets, or unverified claims.
+  CMA is out of scope.
 
 ## Important documents
 

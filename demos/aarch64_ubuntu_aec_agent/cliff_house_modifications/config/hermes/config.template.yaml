@@ -1,62 +1,72 @@
-# Copy to %LOCALAPPDATA%/hermes/profiles/local-aec-cloud/config.yaml.
-# Replace the endpoint and model placeholders. The key is read from AEC_ENDPOINT_API_KEY.
 model:
-  default: REPLACE_WITH_MODEL_ID
-  provider: custom:aec_cloud
-  openai_runtime: auto
-  context_length: 131072
-  max_tokens: 16384
-  supports_vision: true
+  provider: custom:local-vllm
+  default: __MODEL_ID__
+  base_url: __VLLM_BASE_URL__
+  context_length: __CONTEXT_LENGTH__
 
-custom_providers:
-  - name: aec_cloud
-    base_url: https://REPLACE_WITH_ENDPOINT/v1
+providers:
+  local-vllm:
+    name: local-vllm
+    base_url: __VLLM_BASE_URL__
+    default_model: __MODEL_ID__
     api_mode: chat_completions
-    key_env: AEC_ENDPOINT_API_KEY
-    model: REPLACE_WITH_MODEL_ID
-    models:
-      REPLACE_WITH_MODEL_ID:
-        context_length: 131072
-        supports_vision: true
+    context_length: __CONTEXT_LENGTH__
 
-auxiliary:
-  vision:
-    provider: main
-  compression:
-    provider: main
-  title_generation:
-    provider: main
-  mcp:
-    provider: main
+agent:
+  reasoning_effort: medium
+  max_turns: 80
+
+memory:
+  memory_enabled: true
+  provider: daystrom_dml
+  nudge_interval: 0
+  daystrom_dml:
+    integration_dir: __DML_ROOT__
+    launcher: __DML_ROOT__/bin/hermes-dml-memory
+    venv_python: __DML_ROOT__/.venv-dml/bin/python
+    source_dir: __DML_ROOT__/source
+    storage_dir: __DML_STORE__
+    config_path: __DML_ROOT__/config/aec-demo.yaml
+    retrieval_policy: always
+    enable_memory: true
+    enable_personality: false
+    sync_turns: false
+    top_k: 6
+    max_context_chars: 2400
+    preflight_strict: true
+    timeout_seconds: 30
+    project_id: project:cliff-house-modifications-linux
+    dcn:
+      mode: active_read
+tools:
+  tool_search:
+    enabled: "off"
+
+plugins:
+  enabled:
+    - daystrom_dml
 
 terminal:
   backend: local
-  cwd: REPLACE_WITH_REPOSITORY_PATH
+  cwd: __WORKSPACE__
   timeout: 180
 
-memory:
-  memory_enabled: false
-  user_profile_enabled: false
-
-agent:
-  max_turns: 60
-  verbose: false
-  reasoning_effort: low
-
 mcp_servers:
-  rhino:
-    command: REPLACE_WITH_RHINO_MCP_ROUTER_EXE
-    args:
-      - --default-version
-      - '8'
+  daystrom_dml:
+    command: __DML_ROOT__/.venv-dml/bin/python
+    args: [-m, dml_mcp.dml_mcp_server, --config, __DML_ROOT__/config/aec-demo.yaml, --storage, __DML_STORE__, --transport, stdio]
+    enabled: true
+  freecad:
+    command: __HOME__/.local/bin/freecad-mcp
+    args: []
     connect_timeout: 75
-    timeout: 180
+    timeout: 320
   blender:
-    command: REPLACE_WITH_BLENDER_MCP_EXE
+    command: __HOME__/.local/bin/blender-mcp
     args: []
     connect_timeout: 30
-    timeout: 180
+    timeout: 320
     env:
-      BLENDER_HOST: localhost
-      BLENDER_PORT: '9876'
-      DISABLE_TELEMETRY: 'true'
+      BLENDER_HOST: 127.0.0.1
+      BLENDER_PORT: "9876"
+      DISABLE_TELEMETRY: "true"

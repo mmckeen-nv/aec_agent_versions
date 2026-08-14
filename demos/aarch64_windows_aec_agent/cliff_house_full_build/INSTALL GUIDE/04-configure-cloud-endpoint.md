@@ -1,14 +1,24 @@
-# Step 3 — Complete Hermes OOBE
+# Step 3 — Deploy Hermes and connect Rhino MCP
 
-1. Open Hermes Desktop normally. Do not launch it through a repository script.
-2. Complete the product's first-run flow and choose any supported inference provider/model.
-3. Store credentials only through Hermes' normal user configuration.
-4. Use a profile isolated from the quick-modification demo.
-5. Register this workspace after OOBE:
+1. Install Hermes and complete its normal first-run flow.
+2. Start the Rhino MCP listener and note its loopback port.
+3. Deploy an isolated full-build profile:
 
 ```powershell
-.\installer\Register-HermesProject.ps1 -Profile '<your-full-build-profile>'
+.\installer\Deploy-HermesProfile.ps1 `
+  -Profile cliff-house-full-build-windows `
+  -RhinoPort 10500
 ```
 
-Then attach Rhino MCP and Blender MCP through Hermes' normal profile UI. Do not copy configuration
-from another demo. The script never launches Hermes or changes inference/MCP configuration.
+4. Store `NVIDIA_API_KEY` through Hermes' secret UI or in the profile environment; never put it in
+   this repository or `config.yaml`.
+5. If using another Responses-compatible provider, pass `-Provider`, `-Model`, `-BaseUrl`, and
+   `-ContextLength` explicitly.
+6. Verify the deployment:
+
+```powershell
+.\installer\Test-LocalAEC.ps1 -Profile cliff-house-full-build-windows -RhinoPort 10500
+```
+
+The deployer refuses to overwrite an existing profile unless `-Force` is supplied and creates a
+timestamped configuration backup when forced.
