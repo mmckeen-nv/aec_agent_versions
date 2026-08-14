@@ -7,7 +7,8 @@
 - Rhino MCP Platform plug-in installed.
 - Hermes Desktop installed. Both demo shortcuts open the graphical consumer UI; no terminal or
   Hermes TUI is part of the demo experience.
-- Git and Python 3.10 or newer. The deployer installs the pinned Daystrom DML memory harness into
+- Git and Python 3.11 or newer. The deployer installs the pinned Daystrom DML memory harness and
+  the pinned `hermes-aec-runtime` typed Rhino sidecar into
   Hermes' local integration directory; no Ollama, embedding model, CMA, or extra inference model
   is required.
 - NVIDIA inference API key with access to `switchyard/openai/gpt-5.6-sol`.
@@ -27,7 +28,7 @@ not for the first Rhino construction or modification test.
    .\Deploy-AECDemos.ps1
    ```
 
-The installer detects Rhino MCP, installs the pinned DML runtime, seeds a small procedural-memory
+The installer detects Rhino MCP, installs the pinned DML runtime and Hermes AEC runtime, seeds a small procedural-memory
 pack into a separate store for each demo, deploys two isolated Hermes profiles, securely asks for
 the API key only if necessary, and creates **AEC Full Build** and **AEC House Modification** on the Desktop.
 Each shortcut runs its setup invisibly and opens the Hermes Desktop UI pinned to the correct profile.
@@ -60,7 +61,8 @@ Use this first.
    ```
 
 Success means Hermes recalls the Rhino execution recipe, audits the scene, performs the Rhino MCP
-operation, and verifies that only the intended working-copy geometry changed.
+operation through `rhino_scene_query`, `rhino_apply_operations`, and
+`rhino_verify_transaction`, and verifies that only the intended working-copy geometry changed.
 
 ## Test 2 — complete house build
 

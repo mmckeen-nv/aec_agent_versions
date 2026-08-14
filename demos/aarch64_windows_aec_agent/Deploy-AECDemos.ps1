@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 $platformRoot = $PSScriptRoot
 $fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
 $quickRoot = Join-Path $platformRoot 'cliff_house_modifications'
+$runtimeVersion = 'v0.4.1'
 
 & (Join-Path $platformRoot 'memory\Install-AECDml.ps1') -Force:$Force
 
@@ -30,6 +31,7 @@ $deployArguments = @{
 }
 & (Join-Path $fullRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-full-build-windows'
 & (Join-Path $quickRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-modifications-windows'
+& (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -Force:$Force
 
 $profiles = @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')
 $keyValue = $env:NVIDIA_API_KEY
@@ -59,7 +61,7 @@ $keyValue = $null
 
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
-@{ rhino_port = $RhinoPort; platform_root = $platformRoot; memory = 'daystrom_dml' } |
+@{ rhino_port = $RhinoPort; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion } |
   ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stateRoot 'deployment.json') -Encoding utf8NoBOM
 
 $desktop = [Environment]::GetFolderPath('Desktop')
@@ -76,5 +78,5 @@ foreach ($shortcutDefinition in @(
   $shortcut.Save()
 }
 
-Write-Host "AEC_DEMOS_DEPLOYED rhino_port=$RhinoPort memory=daystrom_dml"
+Write-Host "AEC_DEMOS_DEPLOYED rhino_port=$RhinoPort memory=daystrom_dml runtime=$runtimeVersion"
 Write-Host 'Use the two new Desktop shortcuts: AEC Full Build and AEC House Modification.'

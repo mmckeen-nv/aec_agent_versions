@@ -30,6 +30,19 @@ selected phase and perform its read-only preflight. Do not mutate geometry befor
 Never load a completed hero Rhino file, quick Blender master, or another completed model as a
 full-build shortcut. The source-curve `base_model.3dm` is required input, not a completed model.
 
+## Rhino execution surface
+
+For each construction unit, use `rhino_scene_query` to capture the current revision and targets,
+then prefer one `rhino_apply_operations` batch and independently check it with
+`rhino_verify_transaction`. Supply a stable idempotency key and the active working-document path as
+the checkpoint path. Typed operations are required for primitives, curves, in-place transforms,
+attributes, extrusion, offset, deletion, duplication, and booleans.
+
+The Full Build profile alone exposes transactional `rhino_execute_python` as an escape hatch for
+specialized annotations or geometry not represented by the typed catalog. Use it only when typed
+operations cannot express the active phase, and still surround it with rich scene queries and
+verification. Never call raw Rhino `run_python` or `run_csharp`.
+
 ## OOBE and safety
 
 - Hermes provider, model, endpoint, credentials, profile, and MCP configuration are user-owned.

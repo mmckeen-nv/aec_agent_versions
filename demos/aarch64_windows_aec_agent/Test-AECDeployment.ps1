@@ -15,6 +15,7 @@ $checks = [ordered]@{
   'Full-build profile' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\profiles\cliff-house-full-build-windows\config.yaml')
   'Modification profile' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\profiles\cliff-house-modifications-windows\config.yaml')
   'Daystrom DML runtime' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\daystrom-dml\.venv-dml\Scripts\python.exe')
+  'Hermes AEC runtime v0.4.1' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\hermes-aec-runtime\v0.4.1\.venv\Scripts\hermes-aec-mcp.exe')
   'Full-build memory seed' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\daystrom-dml\stores\cliff-house-full-build-windows\.aec-seed.json')
   'Modification memory seed' = Test-Path (Join-Path $env:LOCALAPPDATA 'hermes\integrations\daystrom-dml\stores\cliff-house-modifications-windows-bounded-v2\.aec-seed.json')
   'AEC Full Build shortcut' = Test-Path (Join-Path $desktop 'AEC Full Build.lnk')
@@ -33,6 +34,11 @@ if ($hermes) {
     & $hermes -p $profile mcp test daystrom_dml *> $null
     if ($LASTEXITCODE -eq 0) { Write-Host "PASS  Daystrom DML via $profile" }
     else { Write-Host "FAIL  Daystrom DML via $profile"; $failures.Add("Daystrom DML via $profile") }
+  }
+  foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
+    & $hermes -p $profile mcp test hermes_aec *> $null
+    if ($LASTEXITCODE -eq 0) { Write-Host "PASS  Hermes AEC runtime via $profile" }
+    else { Write-Host "FAIL  Hermes AEC runtime via $profile"; $failures.Add("Hermes AEC runtime via $profile") }
   }
 }
 
