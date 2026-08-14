@@ -14,20 +14,22 @@ absolute tolerance of `0.001 m`; do not scale geometry. The three separated floo
 schematic presentation objects, not extra building geometry. Preserve their program labels and
 their note requiring verification of structure, egress, accessibility, and local code.
 
-## Bounded execution contract
+## Hermes AEC sidecar execution contract
 
 For every modification request, use exactly this progression:
 
-1. Assume the desktop launcher has already opened the timestamped working copy. One purpose-built
-   `run_csharp` audit scoped to the requested feature must confirm the document path and return only
-   document path,
-   units/tolerance, total object count, relevant object IDs/names/layers/bounds, and identified
-   candidates. Do not call unrestricted `list_objects`.
+1. Assume the desktop launcher has already opened the timestamped working copy. Call
+   `rhino_scene_preprocessing` once. Supply a name, layer, or geometry-type filter when the request
+   identifies one; otherwise index the active document. Confirm path, units, tolerance, total count,
+   and stable candidate IDs before mutation.
 2. At most one `get_viewport_image` before mutation, only when geometry relationships remain
    ambiguous after the audit.
-3. One complete `run_python` mutation that creates or changes the requested geometry.
-4. One compact `run_csharp` validation returning changed IDs, before/after counts, relevant bounds,
-   layer/name checks, and task-specific invariants.
+3. Call `rhino_execute_python` once with the exact user intent, expected model delta, and one complete
+   Rhino Python/RhinoCommon script. Use only the injected `__rhino_doc__` document handle. For an
+   ordinary authorized edit, set `dry_run=false`; the sidecar creates an undo transaction, captures
+   created/deleted IDs, times execution, and rolls back a failed script.
+4. Call `rhino_verify` once, filtered to the expected names, layer, or geometry type. Check the
+   receipt plus relevant counts, bounds, layer/name checks, and task-specific invariants.
 5. One `get_viewport_image`, then `save_doc`, report the evidence, and stop.
 
 Web search is available for building, zoning, accessibility, fire, safety, product, and other
@@ -38,7 +40,8 @@ Automatic Daystrom retrieval is sufficient. The profile intentionally does not e
 Daystrom tools, skills, sessions, files, terminal, browser automation, vision-analysis, planning,
 delegation, or computer-use tools. Do not attempt to discover substitutes. The normal ceiling is
 two Rhino inspection calls before
-mutation, one mutation, one validation, one save, and no more than two viewport captures. If Rhino
+mutation, one mutation, one verification, one save, and no more than two viewport captures. Never
+call raw `run_python` or `run_csharp`; the sidecar owns those primitives. If Rhino
 MCP fails, retry one small read-only call once; if it still fails, stop and request a bridge restart.
 
 Hermes inference configuration and credentials are user-owned. The deployed profile uses an
