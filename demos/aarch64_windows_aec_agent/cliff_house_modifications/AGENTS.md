@@ -26,8 +26,10 @@ For every modification request, use exactly this progression:
    ambiguous after the audit.
 3. Call `rhino_execute_python` once with the exact user intent, expected model delta, and one complete
    Rhino Python/RhinoCommon script. Use only the injected `__rhino_doc__` document handle. For an
-   ordinary authorized edit, set `dry_run=false`; the sidecar creates an undo transaction, captures
-   created/deleted IDs, times execution, and rolls back a failed script.
+   ordinary authorized edit, set `dry_run=false` and supply one unique stable `idempotency_key` for
+   the requested change; reuse that exact key when recovering an uncertain call. The sidecar creates
+   an undo transaction, persists its receipt in the document, captures created/deleted IDs, times
+   execution, reconciles dropped responses, and rolls back a failed script.
 4. Call `rhino_verify` once, filtered to the expected names, layer, or geometry type. Check the
    receipt plus relevant counts, bounds, layer/name checks, and task-specific invariants.
 5. One `get_viewport_image`, then `save_doc`, report the evidence, and stop.
@@ -43,6 +45,10 @@ two Rhino inspection calls before
 mutation, one mutation, one verification, one save, and no more than two viewport captures. Never
 call raw `run_python` or `run_csharp`; the sidecar owns those primitives. If Rhino
 MCP fails, retry one small read-only call once; if it still fails, stop and request a bridge restart.
+For a mutation with status `unknown`, never submit a new transaction: call it again only with the
+same `idempotency_key` so the sidecar can recover the persisted receipt.
+For a mutation with status `failed` and `rolled_back=true`, correct the script and submit it with a
+new unique key. An idempotency key is permanently bound to one exact payload.
 
 Hermes inference configuration and credentials are user-owned. The deployed profile uses an
 isolated Daystrom DML store for compact procedural recall. Retrieve it automatically, but persist
