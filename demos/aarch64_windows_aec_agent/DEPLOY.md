@@ -14,6 +14,9 @@ Required for both demos:
 - Internet access for first installation and inference.
 - An NVIDIA inference API key with access to `switchyard/openai/gpt-5.6-sol`.
 
+See [INFERENCE_ENDPOINT.md](INFERENCE_ENDPOINT.md) for the exact endpoint, model, API mode,
+credential behavior, independent connectivity test, and error guide.
+
 Blender, Blender MCP, ComfyUI, and NVIDIA GPU drivers are optional for the initial Rhino test. They
 are required only for later visualization and rendering phases.
 
@@ -43,6 +46,12 @@ The installer is safe to rerun. It installs the runtime version pinned in
 - **AEC Full Build**
 
 Existing managed configurations and plug-ins are backed up before replacement.
+
+Verify the inference provider separately before opening a demo:
+
+```powershell
+.\Test-InferenceEndpoint.ps1
+```
 
 ## Verify
 

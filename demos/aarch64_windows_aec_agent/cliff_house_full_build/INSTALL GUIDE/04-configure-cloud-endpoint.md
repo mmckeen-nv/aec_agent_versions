@@ -1,24 +1,8 @@
-# Step 3 — Deploy Hermes and connect Rhino MCP
+# Inference endpoint configuration
 
-1. Install Hermes and complete its normal first-run flow.
-2. Start the Rhino MCP listener and note its loopback port.
-3. Deploy an isolated full-build profile:
+Use the top-level `Deploy-AECDemos.ps1`; do not deploy this profile manually. The supported
+endpoint is `https://inference-api.nvidia.com/v1/responses`, using
+`switchyard/openai/gpt-5.6-sol` in `codex_responses` mode with a 1,000,000-token context window.
 
-```powershell
-.\installer\Deploy-HermesProfile.ps1 `
-  -Profile cliff-house-full-build-windows `
-  -RhinoPort 1999
-```
-
-4. Store `NVIDIA_API_KEY` through Hermes' secret UI or in the profile environment; never put it in
-   this repository or `config.yaml`.
-5. If using another Responses-compatible provider, pass `-Provider`, `-Model`, `-BaseUrl`, and
-   `-ContextLength` explicitly.
-6. Verify the deployment:
-
-```powershell
-.\installer\Test-LocalAEC.ps1 -Profile cliff-house-full-build-windows -RhinoPort 1999
-```
-
-The deployer refuses to overwrite an existing profile unless `-Force` is supplied and creates a
-timestamped configuration backup when forced.
+Follow [../../INFERENCE_ENDPOINT.md](../../INFERENCE_ENDPOINT.md) for secure API-key entry,
+independent verification, replacement, and troubleshooting.

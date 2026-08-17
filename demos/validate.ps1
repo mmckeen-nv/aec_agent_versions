@@ -12,7 +12,9 @@ $packages = Get-ChildItem -LiteralPath $demosRoot -Directory | ForEach-Object {
 foreach ($required in @(
   'hermes-aec-runtime.version',
   'aarch64_windows_aec_agent\DEPLOY.md',
+  'aarch64_windows_aec_agent\INFERENCE_ENDPOINT.md',
   'aarch64_windows_aec_agent\Deploy-AECDemos.ps1',
+  'aarch64_windows_aec_agent\Test-InferenceEndpoint.ps1',
   'aarch64_windows_aec_agent\Launch-AECDemo.ps1',
   'aarch64_windows_aec_agent\Test-AECDeployment.ps1',
   'aarch64_windows_aec_agent\memory\Install-AECDml.ps1',
