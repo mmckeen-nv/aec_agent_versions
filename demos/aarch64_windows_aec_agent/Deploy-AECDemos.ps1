@@ -2,10 +2,27 @@
 param(
   [ValidateRange(0, 65535)][int]$RhinoPort = 0,
   [ValidateRange(8192, 1050000)][int]$ContextLength = 1000000,
-  [switch]$Force
+  [switch]$Force,
+  [switch]$NoPauseOnError
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Keep an installer window opened from Explorer visible when deployment fails. Automation can
+# opt out with -NoPauseOnError while retaining the non-zero process exit code.
+trap {
+  $failureMessage = $_.Exception.Message
+  Write-Host ''
+  Write-Host 'AEC_DEMOS_DEPLOYMENT_FAILED' -ForegroundColor Red
+  Write-Host $failureMessage -ForegroundColor Red
+  Write-Host ''
+  Write-Host 'Correct the error above, then run Deploy-AECDemos.ps1 again.' -ForegroundColor Yellow
+  if (-not $NoPauseOnError -and [Environment]::UserInteractive) {
+    Read-Host 'Press Enter to close this window' | Out-Null
+  }
+  exit 1
+}
+
 $platformRoot = $PSScriptRoot
 $fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
 $quickRoot = Join-Path $platformRoot 'cliff_house_modifications'

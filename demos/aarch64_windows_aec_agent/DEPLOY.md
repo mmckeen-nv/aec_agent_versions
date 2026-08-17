@@ -34,6 +34,11 @@ the upstream RhinoMCP server in Hermes. Hermes sees only the typed AEC sidecar t
    .\Deploy-AECDemos.ps1
    ```
 
+   If deployment fails, the installer prints `AEC_DEMOS_DEPLOYMENT_FAILED` and waits for Enter so
+   the error cannot disappear with the PowerShell window. Correct the displayed problem and rerun
+   the same command. Automated deployments may add `-NoPauseOnError`; failures still return a
+   non-zero exit code.
+
 4. If prompted, paste the NVIDIA API key. It is written only to the two local demo profile
    environments and is never added to Git.
 5. Wait for `AEC_DEMOS_DEPLOYED`.
