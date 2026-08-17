@@ -2,6 +2,24 @@
 param([Parameter(Mandatory)][ValidateSet('FullBuild', 'Modification')][string]$Demo)
 
 $ErrorActionPreference = 'Stop'
+$logRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos\logs'
+New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
+$logPath = Join-Path $logRoot ("launch-$($Demo.ToLower())-$(Get-Date -Format 'yyyyMMdd').log")
+function Write-LaunchLog([string]$Message) {
+  Add-Content -LiteralPath $logPath -Encoding UTF8 -Value ("{0} {1}" -f (Get-Date).ToUniversalTime().ToString('o'), $Message)
+}
+trap {
+  $message = $_.Exception.Message
+  Write-LaunchLog "FAILED $message"
+  Write-Host ''
+  Write-Host 'AEC_DEMO_LAUNCH_FAILED' -ForegroundColor Red
+  Write-Host $message -ForegroundColor Red
+  Write-Host "Launch log: $logPath" -ForegroundColor Yellow
+  Read-Host 'Press Enter to close this window' | Out-Null
+  exit 1
+}
+Write-LaunchLog "START demo=$Demo"
+
 $state = Get-Content -Raw -LiteralPath (Join-Path $env:LOCALAPPDATA 'hermes\aec-demos\deployment.json') | ConvertFrom-Json
 $desktopHermes = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\apps\desktop\release\win-arm64-unpacked\Hermes.exe'
 if (-not (Test-Path $desktopHermes)) { throw 'Hermes Desktop is not installed.' }
@@ -88,3 +106,4 @@ if ($LASTEXITCODE -ne 0) { throw "Could not activate Hermes profile '$profile'."
 $env:HERMES_PROFILE = $profile
 $env:HERMES_DESKTOP_CWD = $workspace
 Start-Process -FilePath $desktopHermes -WorkingDirectory $workspace
+Write-LaunchLog "READY demo=$Demo profile=$profile workspace=$workspace"

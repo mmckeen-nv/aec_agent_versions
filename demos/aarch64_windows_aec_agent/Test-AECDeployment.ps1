@@ -22,7 +22,7 @@ $checks = [ordered]@{
   'AEC Full Build shortcut' = Test-Path (Join-Path $desktop 'AEC Full Build.lnk')
   'AEC House Modification shortcut' = Test-Path (Join-Path $desktop 'AEC House Modification.lnk')
   'Full-build source model' = Test-Path (Join-Path $PSScriptRoot 'cliff_house_full_build\projects\cliff_house_02\rhino_assets\base_model.3dm')
-  'Quick-demo master' = Test-Path (Join-Path $PSScriptRoot 'cliff_house_modifications\demo\cliff-house\cliff_house_HERO_RHINO_MODEL.3dm')
+  'Quick-demo golden master' = Test-Path (Join-Path $PSScriptRoot 'cliff_house_modifications\demo\cliff-house\cliff_house_GOLDEN_MASTER.3dm')
 }
 
 foreach ($item in $checks.GetEnumerator()) {
