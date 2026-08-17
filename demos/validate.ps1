@@ -15,6 +15,8 @@ foreach ($required in @(
   'aarch64_windows_aec_agent\INFERENCE_ENDPOINT.md',
   'aarch64_windows_aec_agent\Deploy-AECDemos.cmd',
   'aarch64_windows_aec_agent\Deploy-AECDemos.ps1',
+  'aarch64_windows_aec_agent\Uninstall-AECDemos.cmd',
+  'aarch64_windows_aec_agent\Uninstall-AECDemos.ps1',
   'aarch64_windows_aec_agent\Test-AECDeployment.cmd',
   'aarch64_windows_aec_agent\Test-InferenceEndpoint.ps1',
   'aarch64_windows_aec_agent\Test-InferenceEndpoint.cmd',
@@ -71,6 +73,12 @@ if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or
     $windowsLauncher -notmatch 'Deploy-AECDemos\.ps1.*-NoPauseOnError' -or
     $windowsLauncher -notmatch '(?im)^\s*pause\s*$') {
   $failures.Add('Windows policy-safe launcher must invoke deployment and pause on failure')
+}
+$windowsUninstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Uninstall-AECDemos.ps1')
+foreach ($requiredContract in @('Type UNINSTALL to continue', 'Also uninstall Rhino 8', 'Find-RhinoUninstaller', 'Assert-ChildPath', 'AEC_DEMOS_UNINSTALLED')) {
+  if ($windowsUninstaller -notmatch [regex]::Escape($requiredContract)) {
+    $failures.Add("Windows uninstaller is missing safety contract: $requiredContract")
+  }
 }
 $demoLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Launch-AECDemo.ps1')
 if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or $demoLauncher -notmatch 'Press Enter to close this window') {
