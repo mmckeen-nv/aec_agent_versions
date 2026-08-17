@@ -46,6 +46,14 @@ if ($hermes) {
 $statePath = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos\deployment.json'
 if (Test-Path $statePath) {
   $state = Get-Content -Raw -LiteralPath $statePath | ConvertFrom-Json
+  if ($state.blender_enabled) {
+    $blenderLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\blender-mcp.cmd'
+    if (Test-Path $blenderLauncher) { Write-Host 'PASS  Opted-in BlenderMCP launcher' } else { Write-Host 'FAIL  Opted-in BlenderMCP launcher'; $failures.Add('BlenderMCP launcher') }
+  } else { Write-Host 'SKIP  Blender was not selected during deployment.' }
+  if ($state.comfyui_enabled) {
+    $comfyLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.cmd'
+    if (Test-Path $comfyLauncher) { Write-Host 'PASS  Opted-in ComfyUI launcher and FLUX bundle' } else { Write-Host 'FAIL  Opted-in ComfyUI launcher'; $failures.Add('ComfyUI launcher') }
+  } else { Write-Host 'SKIP  ComfyUI was not selected during deployment.' }
   $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.rhino_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
   $owner = if ($listener) { Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue } else { $null }
   if ($owner -and $owner.ProcessName -eq 'Rhino') {

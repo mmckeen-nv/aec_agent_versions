@@ -29,6 +29,32 @@ if (-not (Test-Path $hermesCli)) { throw 'Hermes CLI is not installed.' }
 $rhino = 'C:\Program Files\Rhino 8\System\Rhino.exe'
 if (-not (Test-Path $rhino)) { throw 'Rhino 8 is not installed.' }
 
+if ($state.blender_enabled) {
+  $blender = Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
+  if (-not $blender) { throw 'Blender was enabled during deployment but is no longer installed.' }
+  if (-not (Get-Process blender -ErrorAction SilentlyContinue)) { Start-Process -FilePath $blender.FullName }
+  $blenderDeadline = (Get-Date).AddSeconds(90)
+  do {
+    Start-Sleep -Seconds 2
+    $blenderReady = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue
+  } while (-not $blenderReady -and (Get-Date) -lt $blenderDeadline)
+  if (-not $blenderReady) { throw 'Blender opened, but the managed BlenderMCP server did not start on port 9876.' }
+}
+
+if ($state.comfyui_enabled) {
+  $comfyLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.cmd'
+  if (-not (Test-Path -LiteralPath $comfyLauncher)) { throw 'ComfyUI was enabled, but its managed launcher is missing.' }
+  if (-not (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue)) {
+    Start-Process -FilePath $comfyLauncher -WindowStyle Minimized
+  }
+  $comfyDeadline = (Get-Date).AddMinutes(3)
+  do {
+    Start-Sleep -Seconds 3
+    try { $comfyReady = Invoke-RestMethod -UseBasicParsing -Uri 'http://127.0.0.1:8188/system_stats' -TimeoutSec 5 } catch { $comfyReady = $null }
+  } while (-not $comfyReady -and (Get-Date) -lt $comfyDeadline)
+  if (-not $comfyReady) { throw 'Managed ComfyUI did not become ready on port 8188.' }
+}
+
 function Test-RhinoMCPReady {
   $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.rhino_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
   if (-not $listener) { return $false }

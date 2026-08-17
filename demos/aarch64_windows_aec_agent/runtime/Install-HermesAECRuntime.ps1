@@ -2,6 +2,7 @@
 param(
   [Parameter(Mandatory)][ValidatePattern('^v\d+\.\d+\.\d+$')][string]$Version,
   [int]$RhinoPort = 1999,
+  [switch]$EnableBlender,
   [switch]$Force
 )
 
@@ -48,7 +49,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $resolvedTarget 'Install.ps1'))) {
 }
 
 try {
-  & (Join-Path $resolvedTarget 'Install.ps1') -RhinoPort $RhinoPort
+  & (Join-Path $resolvedTarget 'Install.ps1') -RhinoPort $RhinoPort -EnableBlender:$EnableBlender
   if ($LASTEXITCODE) { throw "Runtime installer exited with code $LASTEXITCODE." }
 } catch {
   if ($backupTarget -and (Test-Path -LiteralPath $backupTarget)) {

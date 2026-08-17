@@ -97,7 +97,13 @@ foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modificati
 }
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'hermes-aec-runtime') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'daystrom-dml') -Root $integrationsRoot
+Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-mcp') -Root $integrationsRoot
+Remove-ManagedPath -Path (Join-Path $integrationsRoot 'comfyui-aec') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $localHermes 'aec-demos') -Root $localHermes
+
+Get-ChildItem -LiteralPath (Join-Path $env:APPDATA 'Blender Foundation\Blender') -Filter 'hermes_aec_blender_startup.py' -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+  Remove-ManagedPath -Path $_.FullName -Root (Join-Path $env:APPDATA 'Blender Foundation\Blender')
+}
 
 $desktop = [Environment]::GetFolderPath('Desktop')
 foreach ($name in @('AEC Full Build.lnk', 'AEC House Modification.lnk')) {
