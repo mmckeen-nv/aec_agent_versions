@@ -6,6 +6,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+function Write-Utf8NoBom {
+  param([Parameter(Mandatory)][string]$LiteralPath, [Parameter(Mandatory)][AllowEmptyString()][string]$Value)
+  [IO.File]::WriteAllText($LiteralPath, $Value, (New-Object Text.UTF8Encoding($false)))
+}
 $integrationRoot = Join-Path $env:LOCALAPPDATA 'hermes\integrations\hermes-aec-runtime'
 $target = Join-Path $integrationRoot $Version
 $resolvedRoot = [IO.Path]::GetFullPath($integrationRoot)
@@ -56,8 +60,8 @@ try {
 $activePath = Join-Path $integrationRoot 'active.json'
 $activeTemporary = "$activePath.$([guid]::NewGuid().ToString('N')).tmp"
 try {
-  @{ schema_version = 1; version = $Version; root = $resolvedTarget; installed_at = (Get-Date).ToUniversalTime().ToString('o') } |
-    ConvertTo-Json | Set-Content -LiteralPath $activeTemporary -Encoding utf8NoBOM
+  $activeState = @{ schema_version = 1; version = $Version; root = $resolvedTarget; installed_at = (Get-Date).ToUniversalTime().ToString('o') } | ConvertTo-Json
+  Write-Utf8NoBom -LiteralPath $activeTemporary -Value ($activeState + [Environment]::NewLine)
   Move-Item -LiteralPath $activeTemporary -Destination $activePath -Force
 } finally {
   if (Test-Path -LiteralPath $activeTemporary) { Remove-Item -LiteralPath $activeTemporary -Force }

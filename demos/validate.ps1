@@ -51,6 +51,13 @@ foreach ($script in @(
   if ($content -match "v0\.4\.1") { $failures.Add("Hard-coded runtime pin outside central file: $script") }
 }
 
+$windowsPowerShell = Get-ChildItem -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent') -Recurse -File -Filter '*.ps1'
+foreach ($script in $windowsPowerShell) {
+  if ((Get-Content -Raw -LiteralPath $script.FullName) -match '(?i)-Encoding\s+utf8NoBOM') {
+    $failures.Add("Windows PowerShell 5.1-incompatible encoding: $($script.FullName)")
+  }
+}
+
 $windowsDeploy = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.ps1')
 if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
     $windowsDeploy -notmatch "Read-Host 'Press Enter to close this window'" -or

@@ -8,6 +8,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Write-Utf8NoBom {
+  param([Parameter(Mandatory)][string]$LiteralPath, [Parameter(Mandatory)][AllowEmptyString()][string]$Value)
+  [IO.File]::WriteAllText($LiteralPath, $Value, (New-Object Text.UTF8Encoding($false)))
+}
+
 # Keep an installer window opened from Explorer visible when deployment fails. Automation can
 # opt out with -NoPauseOnError while retaining the non-zero process exit code.
 trap {
@@ -74,14 +79,14 @@ foreach ($profile in $profiles) {
   $envFile = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\.env"
   $lines = if (Test-Path $envFile) { @(Get-Content -LiteralPath $envFile | Where-Object { $_ -notmatch '^NVIDIA_API_KEY=' }) } else { @() }
   $lines += "NVIDIA_API_KEY=$keyValue"
-  Set-Content -LiteralPath $envFile -Value $lines -Encoding utf8NoBOM
+  Write-Utf8NoBom -LiteralPath $envFile -Value (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
 }
 $keyValue = $null
 
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
-@{ schema_version = 2; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion } |
-  ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stateRoot 'deployment.json') -Encoding utf8NoBOM
+$deploymentState = @{ schema_version = 2; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion } | ConvertTo-Json
+Write-Utf8NoBom -LiteralPath (Join-Path $stateRoot 'deployment.json') -Value ($deploymentState + [Environment]::NewLine)
 
 $desktop = [Environment]::GetFolderPath('Desktop')
 $shell = New-Object -ComObject WScript.Shell
