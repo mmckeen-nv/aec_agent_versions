@@ -61,7 +61,9 @@ foreach ($script in $windowsPowerShell) {
 $windowsDeploy = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.ps1')
 if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
     $windowsDeploy -notmatch "Read-Host 'Press Enter to close this window'" -or
-    $windowsDeploy -notmatch '\[switch\]\$NoPauseOnError') {
+    $windowsDeploy -notmatch '\[switch\]\$NoPauseOnError' -or
+    $windowsDeploy -notmatch 'AEC_PREREQUISITES_PASS' -or
+    $windowsDeploy -notmatch 'Hermes managed Python or uv runtime') {
   $failures.Add('Windows deployment entrypoint must keep interactive error output visible')
 }
 $windowsLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.cmd')

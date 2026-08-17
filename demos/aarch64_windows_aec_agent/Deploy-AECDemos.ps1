@@ -31,6 +31,27 @@ trap {
 $platformRoot = $PSScriptRoot
 $fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
 $quickRoot = Join-Path $platformRoot 'cliff_house_modifications'
+
+# Validate non-redistributable host applications before creating profiles or installing anything.
+$missingPrerequisites = [System.Collections.Generic.List[string]]::new()
+$rhinoPath = 'C:\Program Files\Rhino 8\System\Rhino.exe'
+$hermesRoot = Join-Path $env:LOCALAPPDATA 'hermes'
+$hermesDesktop = Join-Path $hermesRoot 'hermes-agent\apps\desktop\release\win-arm64-unpacked\Hermes.exe'
+$hermesCli = Join-Path $hermesRoot 'hermes-agent\venv\Scripts\hermes.exe'
+$hermesPython = Join-Path $hermesRoot 'hermes-agent\venv\Scripts\python.exe'
+$hermesUv = Join-Path $hermesRoot 'bin\uv.exe'
+if (-not (Test-Path -LiteralPath $rhinoPath)) { $missingPrerequisites.Add('Rhino 8 (installed and licensed)') }
+if (-not (Test-Path -LiteralPath $hermesDesktop)) { $missingPrerequisites.Add('Hermes Desktop for Windows ARM64') }
+if (-not (Test-Path -LiteralPath $hermesCli)) { $missingPrerequisites.Add('Hermes CLI/OOBE completion') }
+if (-not (Test-Path -LiteralPath $hermesPython) -and -not (Test-Path -LiteralPath $hermesUv)) {
+  $missingPrerequisites.Add('Hermes managed Python or uv runtime')
+}
+if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) { $missingPrerequisites.Add('Git for Windows') }
+if ($missingPrerequisites.Count) {
+  throw "Prerequisite check failed before deployment changed the machine: $($missingPrerequisites -join '; ')."
+}
+Write-Host 'AEC_PREREQUISITES_PASS rhino=ready hermes=ready python=managed git=ready'
+
 $runtimeVersionFile = Join-Path (Split-Path -Parent $platformRoot) 'hermes-aec-runtime.version'
 $runtimeVersion = (Get-Content -Raw -LiteralPath $runtimeVersionFile).Trim()
 if ($runtimeVersion -notmatch '^v\d+\.\d+\.\d+$') { throw "Invalid Hermes AEC runtime pin: $runtimeVersion" }

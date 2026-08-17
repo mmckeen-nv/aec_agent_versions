@@ -23,6 +23,10 @@ are required only for later visualization and rendering phases.
 The installer supplies the hardened AEC RhinoMCP plug-in. Do **not** separately install or register
 the upstream RhinoMCP server in Hermes. Hermes sees only the typed AEC sidecar tools.
 
+Python is not a separate prerequisite. Deployment uses the Python bundled with Hermes Desktop or
+automatically installs an isolated Python 3.12 runtime through Hermes' bundled `uv`. The installer
+checks Rhino, Hermes/OOBE, its managed Python bootstrap, and Git before changing the machine.
+
 ## Install
 
 1. Close Rhino and Hermes Desktop.
