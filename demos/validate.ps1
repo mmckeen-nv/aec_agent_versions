@@ -48,6 +48,13 @@ foreach ($script in @(
   if ($content -match "v0\.4\.1") { $failures.Add("Hard-coded runtime pin outside central file: $script") }
 }
 
+$windowsDeploy = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.ps1')
+if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
+    $windowsDeploy -notmatch "Read-Host 'Press Enter to close this window'" -or
+    $windowsDeploy -notmatch '\[switch\]\$NoPauseOnError') {
+  $failures.Add('Windows deployment entrypoint must keep interactive error output visible')
+}
+
 foreach ($template in @(
   'aarch64_ubuntu_aec_agent\cliff_house_full_build\config\hermes\config.template.yaml',
   'aarch64_ubuntu_aec_agent\cliff_house_modifications\config\hermes\config.template.yaml'
