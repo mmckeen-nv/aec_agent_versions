@@ -6,3 +6,5 @@ endpoint, stores the API key only in that local profile environment, and registe
 sidecar on Rhino port `1999`.
 
 See [../../DEPLOY.md](../../DEPLOY.md) for the supported command and verification procedure.
+The exact provider values and independent endpoint test are documented in
+[../../INFERENCE_ENDPOINT.md](../../INFERENCE_ENDPOINT.md).

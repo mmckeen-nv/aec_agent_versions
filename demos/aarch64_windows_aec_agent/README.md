@@ -26,6 +26,7 @@ open the graphical Hermes UI automatically.
 
 ## More detail
 
+- [Inference endpoint and API-key setup](INFERENCE_ENDPOINT.md)
 - [House modification workflow](cliff_house_modifications/README.md)
 - [Full-build workflow](cliff_house_full_build/README.md)
 - [Requirements, deployment, testing, and recovery](DEPLOY.md)
