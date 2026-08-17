@@ -26,18 +26,19 @@ the upstream RhinoMCP server in Hermes. Hermes sees only the typed AEC sidecar t
 ## Install
 
 1. Close Rhino and Hermes Desktop.
-2. Open PowerShell in this directory.
-3. Run:
+2. Open PowerShell or Command Prompt in this directory.
+3. Run the policy-safe launcher:
 
-   ```powershell
-   Set-ExecutionPolicy -Scope Process Bypass
-   .\Deploy-AECDemos.ps1
+   ```bat
+   .\Deploy-AECDemos.cmd
    ```
 
-   If deployment fails, the installer prints `AEC_DEMOS_DEPLOYMENT_FAILED` and waits for Enter so
-   the error cannot disappear with the PowerShell window. Correct the displayed problem and rerun
-   the same command. Automated deployments may add `-NoPauseOnError`; failures still return a
-   non-zero exit code.
+   The launcher bypasses PowerShell execution policy only for its child installer process; it does
+   not change the user or machine policy. If deployment fails, it keeps the window open until
+   Enter is pressed. Correct the displayed problem and rerun the same command.
+
+   Operators running the PowerShell script directly must first use
+   `Set-ExecutionPolicy -Scope Process Bypass`. `-NoPauseOnError` is reserved for automation.
 
 4. If prompted, paste the NVIDIA API key. It is written only to the two local demo profile
    environments and is never added to Git.
@@ -54,16 +55,16 @@ Existing managed configurations and plug-ins are backed up before replacement.
 
 Verify the inference provider separately before opening a demo:
 
-```powershell
-.\Test-InferenceEndpoint.ps1
+```bat
+.\Test-InferenceEndpoint.cmd
 ```
 
 ## Verify
 
 Run:
 
-```powershell
-.\Test-AECDeployment.ps1
+```bat
+.\Test-AECDeployment.cmd
 ```
 
 The final line must be:
@@ -118,9 +119,9 @@ input.
 
 Close Rhino and Hermes, then run:
 
-```powershell
-.\Deploy-AECDemos.ps1 -RhinoPort 1999 -Force
-.\Test-AECDeployment.ps1
+```bat
+.\Deploy-AECDemos.cmd -RhinoPort 1999 -Force
+.\Test-AECDeployment.cmd
 ```
 
 Do not change ports merely because a listener failed. First close duplicate Rhino processes and

@@ -10,11 +10,10 @@ This package installs two Hermes Desktop demos for Rhino 8:
 ## Install
 
 Read [DEPLOY.md](DEPLOY.md) for the requirements and verified installation procedure. The entire
-package is installed with one command:
+package is installed with one command that works even when PowerShell script execution is disabled:
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\Deploy-AECDemos.ps1
+```bat
+.\Deploy-AECDemos.cmd
 ```
 
 The installer deploys the two isolated Hermes profiles, the pinned Hermes AEC runtime, the bundled
