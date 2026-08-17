@@ -11,6 +11,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+function Write-Utf8NoBom {
+  param([Parameter(Mandatory)][string]$LiteralPath, [Parameter(Mandatory)][AllowEmptyString()][string]$Value)
+  [IO.File]::WriteAllText($LiteralPath, $Value, (New-Object Text.UTF8Encoding($false)))
+}
 $packageRoot = Split-Path -Parent $PSScriptRoot
 $profileRoot = Join-Path $env:LOCALAPPDATA "hermes\profiles\$Profile"
 $configPath = Join-Path $profileRoot 'config.yaml'
@@ -41,7 +45,7 @@ if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House quick-modification
   if (Test-Path -LiteralPath $configPath) {
     Copy-Item -LiteralPath $configPath -Destination "$configPath.$(Get-Date -Format 'yyyyMMdd_HHmmss').bak"
   }
-  Set-Content -LiteralPath $configPath -Value $config -Encoding utf8NoBOM
+  Write-Utf8NoBom -LiteralPath $configPath -Value $config
   Copy-Item -LiteralPath (Join-Path $packageRoot 'AGENTS.md') -Destination (Join-Path $profileRoot 'AGENTS.md') -Force
   $pluginSource = Join-Path $dmlRoot 'source\integrations\hermes\plugins\daystrom_dml'
   if (-not (Test-Path $pluginSource) -or -not (Test-Path $dmlPython)) { throw 'Daystrom DML is not installed. Run Deploy-AECDemos.ps1.' }

@@ -11,6 +11,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+function Write-Utf8NoBom {
+  param([Parameter(Mandatory)][string]$LiteralPath, [Parameter(Mandatory)][AllowEmptyString()][string]$Value)
+  [IO.File]::WriteAllText($LiteralPath, $Value, (New-Object Text.UTF8Encoding($false)))
+}
 $packageRoot = Split-Path -Parent $PSScriptRoot
 $profileRoot = Join-Path $env:LOCALAPPDATA "hermes\profiles\$Profile"
 $configPath = Join-Path $profileRoot 'config.yaml'
@@ -47,7 +51,7 @@ if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House Hermes profile')) 
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     Copy-Item -LiteralPath $configPath -Destination "$configPath.$stamp.bak"
   }
-  Set-Content -LiteralPath $configPath -Value $config -Encoding utf8NoBOM
+  Write-Utf8NoBom -LiteralPath $configPath -Value $config
 
   foreach ($name in @('AGENTS.md', 'hermes', 'projects', 'skills', 'system_prompts')) {
     $source = Join-Path $packageRoot $name
