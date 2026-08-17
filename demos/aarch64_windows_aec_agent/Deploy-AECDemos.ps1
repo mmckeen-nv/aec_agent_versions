@@ -117,7 +117,7 @@ foreach ($shortcutDefinition in @(
 )) {
   $shortcut = $shell.CreateShortcut((Join-Path $desktop "$($shortcutDefinition.Name).lnk"))
   $shortcut.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-  $shortcut.Arguments = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$platformRoot\Launch-AECDemo.ps1`" -Demo $($shortcutDefinition.Demo)"
+  $shortcut.Arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$platformRoot\Launch-AECDemo.ps1`" -Demo $($shortcutDefinition.Demo)"
   $shortcut.WorkingDirectory = $platformRoot
   $shortcut.Description = $shortcutDefinition.Name
   $shortcut.Save()

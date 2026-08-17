@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $packageRoot = Split-Path -Parent $PSScriptRoot
 $master = Join-Path $packageRoot 'demo\cliff-house\cliff_house_GOLDEN_MASTER.3dm'
-$expected = 'D7DB42D78B360C66D94E1E034C201EDD98EFF8F63F35B19C7995E7D1B63F4F7C'
+$expected = 'B45D8F7A7262DBEC4F077007A17701A29281C00F0B17394A20745ED981C1BB05'
 $runRoot = Join-Path $packageRoot "work\$RunId"
 $working = Join-Path $runRoot 'rhino\cliff_house_quick_working.3dm'
 

@@ -72,6 +72,13 @@ if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or
     $windowsLauncher -notmatch '(?im)^\s*pause\s*$') {
   $failures.Add('Windows policy-safe launcher must invoke deployment and pause on failure')
 }
+$demoLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Launch-AECDemo.ps1')
+if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or $demoLauncher -notmatch 'Press Enter to close this window') {
+  $failures.Add('Windows demo launcher must preserve and log visible failures')
+}
+if ($windowsDeploy -match 'WindowStyle Hidden') {
+  $failures.Add('Windows desktop shortcuts must not hide launcher failures')
+}
 
 foreach ($template in @(
   'aarch64_ubuntu_aec_agent\cliff_house_full_build\config\hermes\config.template.yaml',
@@ -164,6 +171,11 @@ foreach ($contract in $quickContracts) {
   } elseif ((Get-FileHash -LiteralPath $master -Algorithm SHA256).Hash -ne $contract.Hash) {
     $failures.Add("$($contract.Name): protected master hash mismatch")
   }
+}
+
+$workingCopyInstaller = Get-Content -Raw -LiteralPath (Join-Path $quickContracts[0].Root 'installer\New-WorkingCopy.ps1')
+if ($workingCopyInstaller -notmatch $quickContracts[0].Hash) {
+  $failures.Add('Windows working-copy installer hash does not match the protected golden master')
 }
 
 $trackedText = Get-ChildItem -LiteralPath $demosRoot -Recurse -File | Where-Object {
