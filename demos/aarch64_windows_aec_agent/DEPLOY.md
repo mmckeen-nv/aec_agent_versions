@@ -140,3 +140,17 @@ rerun on `1999`. Never expose raw Rhino scripting tools to the modification prof
 - Legacy Rhino fallback: disabled.
 - Desktop: exactly the two AEC shortcuts listed above.
 - Runtime and memory stores: `%LOCALAPPDATA%\hermes\integrations`.
+
+## Uninstall
+
+Close Hermes Desktop and every Rhino window, then run:
+
+```bat
+.\Uninstall-AECDemos.cmd
+```
+
+Type `UNINSTALL` at the confirmation prompt. The uninstaller removes only the two managed profiles,
+their credential files, the two shortcuts, Daystrom DML, Hermes AEC runtime versions, demo state,
+and the managed AEC RhinoMCP plug-in and registration. It then asks whether to uninstall Rhino 8.
+Answer `y` to invoke Rhino's registered McNeel uninstaller; a Windows elevation prompt may appear.
+The repository and generated project/work files are preserved.

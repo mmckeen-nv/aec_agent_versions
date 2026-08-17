@@ -32,3 +32,9 @@ open the graphical Hermes UI automatically.
 
 Credentials, sessions, logs, generated models, renders, and application preferences remain local
 to the workstation and are not repository content.
+
+## Uninstall
+
+Close Hermes and Rhino, then run `Uninstall-AECDemos.cmd`. The uninstaller confirms the destructive
+scope and asks separately whether Rhino 8 should also be removed. It preserves the downloaded
+repository and generated project/work files.
