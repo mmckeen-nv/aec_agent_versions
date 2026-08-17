@@ -2,6 +2,8 @@
 param(
   [ValidateRange(0, 65535)][int]$RhinoPort = 0,
   [ValidateRange(8192, 1050000)][int]$ContextLength = 1000000,
+  [ValidateSet('Ask', 'Yes', 'No')][string]$Blender = 'Ask',
+  [ValidateSet('Ask', 'Yes', 'No')][string]$ComfyUI = 'Ask',
   [switch]$Force,
   [switch]$NoPauseOnError
 )
@@ -11,6 +13,12 @@ $ErrorActionPreference = 'Stop'
 function Write-Utf8NoBom {
   param([Parameter(Mandatory)][string]$LiteralPath, [Parameter(Mandatory)][AllowEmptyString()][string]$Value)
   [IO.File]::WriteAllText($LiteralPath, $Value, (New-Object Text.UTF8Encoding($false)))
+}
+
+function Resolve-OptionalChoice([string]$Choice, [string]$Prompt) {
+  if ($Choice -eq 'Yes') { return $true }
+  if ($Choice -eq 'No') { return $false }
+  return (Read-Host "$Prompt [y/N]") -match '^(?i:y|yes)$'
 }
 
 # Keep an installer window opened from Explorer visible when deployment fails. Automation can
@@ -31,6 +39,16 @@ trap {
 $platformRoot = $PSScriptRoot
 $fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
 $quickRoot = Join-Path $platformRoot 'cliff_house_modifications'
+$useBlender = Resolve-OptionalChoice -Choice $Blender -Prompt 'Are you going to use Blender?'
+if ($useBlender) {
+  $installedBlender = Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (-not $installedBlender) {
+    throw 'Blender was selected but is not installed. Install Blender from https://www.blender.org/download/ before deploying so BlenderMCP can be installed.'
+  }
+}
+Write-Host 'ComfyUI requires large downloads. A FAST and STABLE internet connection is recommended; tradeshow internet may fail.' -ForegroundColor Yellow
+$useComfyUI = Resolve-OptionalChoice -Choice $ComfyUI -Prompt 'Are you going to use ComfyUI?'
+Write-Host "AEC_OPTIONAL_SELECTION blender=$($useBlender.ToString().ToLower()) comfyui=$($useComfyUI.ToString().ToLower())"
 
 # Validate non-redistributable host applications before creating profiles or installing anything.
 $missingPrerequisites = [System.Collections.Generic.List[string]]::new()
@@ -51,6 +69,8 @@ if ($missingPrerequisites.Count) {
   throw "Prerequisite check failed before deployment changed the machine: $($missingPrerequisites -join '; ')."
 }
 Write-Host 'AEC_PREREQUISITES_PASS rhino=ready hermes=ready python=managed git=ready'
+
+& (Join-Path $platformRoot 'optional\Install-Visualization.ps1') -EnableBlender:$useBlender -EnableComfyUI:$useComfyUI
 
 $runtimeVersionFile = Join-Path (Split-Path -Parent $platformRoot) 'hermes-aec-runtime.version'
 $runtimeVersion = (Get-Content -Raw -LiteralPath $runtimeVersionFile).Trim()
@@ -76,7 +96,7 @@ $deployArguments = @{
 }
 & (Join-Path $fullRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-full-build-windows'
 & (Join-Path $quickRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-modifications-windows'
-& (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -Force:$Force
+& (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -EnableBlender:$useBlender -Force:$Force
 
 $profiles = @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')
 $keyValue = $env:NVIDIA_API_KEY
@@ -106,7 +126,7 @@ $keyValue = $null
 
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
-$deploymentState = @{ schema_version = 2; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion } | ConvertTo-Json
+$deploymentState = @{ schema_version = 3; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion; blender_enabled = $useBlender; blender_port = $(if ($useBlender) { 9876 } else { $null }); comfyui_enabled = $useComfyUI; comfyui_url = $(if ($useComfyUI) { 'http://127.0.0.1:8188' } else { $null }) } | ConvertTo-Json
 Write-Utf8NoBom -LiteralPath (Join-Path $stateRoot 'deployment.json') -Value ($deploymentState + [Environment]::NewLine)
 
 $desktop = [Environment]::GetFolderPath('Desktop')
@@ -123,5 +143,5 @@ foreach ($shortcutDefinition in @(
   $shortcut.Save()
 }
 
-Write-Host "AEC_DEMOS_DEPLOYED transport=rhinomcp-direct rhino_port=$RhinoPort memory=daystrom_dml runtime=$runtimeVersion"
+Write-Host "AEC_DEMOS_DEPLOYED transport=rhinomcp-direct rhino_port=$RhinoPort memory=daystrom_dml runtime=$runtimeVersion blender=$($useBlender.ToString().ToLower()) comfyui=$($useComfyUI.ToString().ToLower())"
 Write-Host 'Use the two new Desktop shortcuts: AEC Full Build and AEC House Modification.'

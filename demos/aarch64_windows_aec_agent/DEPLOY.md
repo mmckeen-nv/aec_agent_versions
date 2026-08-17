@@ -17,8 +17,11 @@ Required for both demos:
 See [INFERENCE_ENDPOINT.md](INFERENCE_ENDPOINT.md) for the exact endpoint, model, API mode,
 credential behavior, independent connectivity test, and error guide.
 
-Blender, Blender MCP, ComfyUI, and NVIDIA GPU drivers are optional for the initial Rhino test. They
-are required only for later visualization and rendering phases.
+Blender and ComfyUI are independent opt-in deployment features. The installer asks about each.
+Answering No skips that component without failing the Rhino deployment. If Blender is selected,
+install Blender before deployment so the installer can add and auto-start pinned BlenderMCP 1.8.3.
+If ComfyUI is selected, deployment downloads the pinned NVIDIA portable build and approximately
+13 GB of FLUX.2 Klein model files; use a fast, stable connection because tradeshow internet may fail.
 
 The installer supplies the hardened AEC RhinoMCP plug-in. Do **not** separately install or register
 the upstream RhinoMCP server in Hermes. Hermes sees only the typed AEC sidecar tools.
@@ -46,7 +49,8 @@ checks Rhino, Hermes/OOBE, its managed Python bootstrap, and Git before changing
 
 4. If prompted, paste the NVIDIA API key. It is written only to the two local demo profile
    environments and is never added to Git.
-5. Wait for `AEC_DEMOS_DEPLOYED`.
+5. Answer the independent Blender and ComfyUI questions. Both default to No.
+6. Wait for `AEC_DEMOS_DEPLOYED`; its final line records both selections.
 
 The installer is safe to rerun. It installs the runtime version pinned in
 `../hermes-aec-runtime.version`, installs the bundled Rhino plug-in, configures loopback port

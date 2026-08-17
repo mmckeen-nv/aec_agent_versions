@@ -25,6 +25,8 @@ foreach ($required in @(
   'aarch64_windows_aec_agent\memory\Install-AECDml.ps1',
   'aarch64_windows_aec_agent\memory\dml.yaml',
   'aarch64_windows_aec_agent\memory\seed_dml.py',
+  'aarch64_windows_aec_agent\optional\Install-Visualization.ps1',
+  'aarch64_windows_aec_agent\optional\hermes_aec_blender_startup.py',
   'aarch64_ubuntu_aec_agent\DEPLOY.md',
   'aarch64_ubuntu_aec_agent\deploy-aec-demos.sh',
   'aarch64_ubuntu_aec_agent\launch-aec-demo.sh',
@@ -67,6 +69,13 @@ if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
     $windowsDeploy -notmatch 'AEC_PREREQUISITES_PASS' -or
     $windowsDeploy -notmatch 'Hermes managed Python or uv runtime') {
   $failures.Add('Windows deployment entrypoint must keep interactive error output visible')
+}
+foreach ($optionalContract in @('Are you going to use Blender?', 'Are you going to use ComfyUI?', 'tradeshow internet may fail', 'EnableBlender:$useBlender', 'EnableComfyUI:$useComfyUI')) {
+  if ($windowsDeploy -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows optional deployment contract is missing: $optionalContract") }
+}
+$visualizationInstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Install-Visualization.ps1')
+foreach ($optionalContract in @("blenderMcpVersion = '1.8.3'", 'v0.33.1', 'flux-2-klein-base-4b-fp8.safetensors', 'qwen_3_4b.safetensors', 'flux2-vae.safetensors', 'COMFYUI_INTEGRATION_READY')) {
+  if ($visualizationInstaller -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows visualization installer is missing: $optionalContract") }
 }
 $windowsLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.cmd')
 if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or
