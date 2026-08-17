@@ -13,8 +13,11 @@ foreach ($required in @(
   'hermes-aec-runtime.version',
   'aarch64_windows_aec_agent\DEPLOY.md',
   'aarch64_windows_aec_agent\INFERENCE_ENDPOINT.md',
+  'aarch64_windows_aec_agent\Deploy-AECDemos.cmd',
   'aarch64_windows_aec_agent\Deploy-AECDemos.ps1',
+  'aarch64_windows_aec_agent\Test-AECDeployment.cmd',
   'aarch64_windows_aec_agent\Test-InferenceEndpoint.ps1',
+  'aarch64_windows_aec_agent\Test-InferenceEndpoint.cmd',
   'aarch64_windows_aec_agent\Launch-AECDemo.ps1',
   'aarch64_windows_aec_agent\Test-AECDeployment.ps1',
   'aarch64_windows_aec_agent\memory\Install-AECDml.ps1',
@@ -53,6 +56,12 @@ if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
     $windowsDeploy -notmatch "Read-Host 'Press Enter to close this window'" -or
     $windowsDeploy -notmatch '\[switch\]\$NoPauseOnError') {
   $failures.Add('Windows deployment entrypoint must keep interactive error output visible')
+}
+$windowsLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.cmd')
+if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or
+    $windowsLauncher -notmatch 'Deploy-AECDemos\.ps1.*-NoPauseOnError' -or
+    $windowsLauncher -notmatch '(?im)^\s*pause\s*$') {
+  $failures.Add('Windows policy-safe launcher must invoke deployment and pause on failure')
 }
 
 foreach ($template in @(

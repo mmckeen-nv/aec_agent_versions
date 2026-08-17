@@ -90,12 +90,11 @@ running; that is a separate local check.
 1. Obtain an NVIDIA inference API key that is authorized for
    `switchyard/openai/gpt-5.6-sol`.
 2. Close Hermes Desktop and Rhino.
-3. Open PowerShell in `demos\aarch64_windows_aec_agent`.
+3. Open PowerShell or Command Prompt in `demos\aarch64_windows_aec_agent`.
 4. Run:
 
-   ```powershell
-   Set-ExecutionPolicy -Scope Process Bypass
-   .\Deploy-AECDemos.ps1
+   ```bat
+   .\Deploy-AECDemos.cmd
    ```
 
 5. When `NVIDIA API key` appears, paste the key and press Enter. PowerShell does not display the
@@ -116,8 +115,8 @@ prompting. On a repair run it reuses the key already stored in either demo profi
 
 With Hermes closed, run:
 
-```powershell
-.\Test-InferenceEndpoint.ps1
+```bat
+.\Test-InferenceEndpoint.cmd
 ```
 
 Expected result:
@@ -131,8 +130,8 @@ model, print the key, or print generated response text.
 
 To test the other profile explicitly:
 
-```powershell
-.\Test-InferenceEndpoint.ps1 -Profile cliff-house-full-build-windows
+```bat
+.\Test-InferenceEndpoint.cmd -Profile cliff-house-full-build-windows
 ```
 
 ## Replace an expired or incorrect key
@@ -140,9 +139,9 @@ To test the other profile explicitly:
 Close Hermes and Rhino. Remove only the `NVIDIA_API_KEY=` line from each demo profile `.env`, then
 force a managed refresh:
 
-```powershell
-.\Deploy-AECDemos.ps1 -RhinoPort 1999 -Force
-.\Test-InferenceEndpoint.ps1
+```bat
+.\Deploy-AECDemos.cmd -RhinoPort 1999 -Force
+.\Test-InferenceEndpoint.cmd
 ```
 
 Because no old key remains, the installer prompts securely and hides the pasted characters. It
