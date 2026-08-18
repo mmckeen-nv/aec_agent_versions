@@ -20,10 +20,9 @@ or configure inference and MCP.
 1. Install [Hermes Desktop for Windows](https://hermes-agent.nousresearch.com/).
 2. Install Rhino 8 from McNeel and activate the license.
 3. Install [Blender for Windows](https://www.blender.org/download/).
-4. Install [ComfyUI Desktop for Windows (NVIDIA)](https://www.comfy.org/download).
-
-During ComfyUI initialization, select **NVIDIA**. Do not select DirectML. ComfyUI Desktop
-manages its own Python environment and CUDA-compatible PyTorch packages.
+4. Do not install ComfyUI Desktop on Windows ARM64. When ComfyUI is selected,
+   `Deploy-AECDemos.ps1` enables and validates WSL2, installs Ubuntu 24.04, creates the isolated
+   `nvidia` demo account, and installs the supported native CUDA 13 ComfyUI environment.
 
 ## Confirm application discovery
 

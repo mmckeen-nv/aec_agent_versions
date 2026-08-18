@@ -52,8 +52,11 @@ checks Rhino, Hermes/OOBE, its managed Python bootstrap, and Git before changing
 5. Answer the independent Blender and ComfyUI questions. Both default to No.
 
 On Windows ARM64, ComfyUI is installed natively inside WSL2 Ubuntu 24.04 with the CUDA 13
-PyTorch build. Install WSL2 first with `wsl --install -d Ubuntu-24.04` and restart Windows if
-requested. The installer copies the model weights into WSL's Linux filesystem and manages a
+PyTorch build. The deployment script enables the WSL2 Windows features, updates WSL, installs
+Ubuntu 24.04 when needed, and initializes the deterministic demo account `nvidia` / `nvidia`.
+It will stop with a clear instruction if Windows requires a restart. This deliberately weak
+credential is suitable only for the isolated demo appliance and must not be reused elsewhere.
+The installer copies the model weights into WSL's Linux filesystem and manages a
 systemd service on port 8188; it does not run the incompatible x64 Windows portable build under
 emulation. On x64 Windows, the pinned NVIDIA portable build remains the supported backend.
 6. Wait for `AEC_DEMOS_DEPLOYED`; its final line records both selections.

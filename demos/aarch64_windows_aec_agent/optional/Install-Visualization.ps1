@@ -104,6 +104,41 @@ if ($EnableComfyUI) {
   $comfyRoot = Join-Path $integrationRoot 'comfyui-aec'
   $isArm64 = Test-NativeWindowsArm64
   Write-Host "COMFYUI_PLATFORM_DETECTED arm64=$($isArm64.ToString().ToLowerInvariant()) process_architecture=$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
+  if ($isArm64) {
+    $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
+    Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
+    $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
+    $wslAlreadyReady = $false
+    $existingWsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
+    if ($existingWsl) {
+      try {
+        $existingDistro = Find-Ubuntu2404Distribution $existingWsl.Source
+        $kernel = ((& $existingWsl.Source -d $existingDistro -- uname -r | Select-Object -First 1) -replace "`0", '').Trim()
+        & $existingWsl.Source -d $existingDistro -u root -- id -u nvidia *> $null
+        $wslAlreadyReady = ($LASTEXITCODE -eq 0 -and $kernel -match '(?i)WSL2')
+        if ($wslAlreadyReady) {
+          [IO.File]::WriteAllText($statusPath, (@{ status = 'ready'; message = 'Existing WSL2 appliance passed sanity checks.'; distribution = $existingDistro } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
+        }
+      } catch {}
+    }
+    if (-not $wslAlreadyReady) {
+      $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+      if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        & $initializer -StatusPath $statusPath
+      } else {
+        Write-Host 'WSL2 initialization requires one Windows administrator approval.' -ForegroundColor Yellow
+        $arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$initializer`" -StatusPath `"$statusPath`""
+        $process = Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList $arguments -Verb RunAs -Wait -PassThru
+        if ($process.ExitCode -ne 0 -and -not (Test-Path -LiteralPath $statusPath)) { throw 'Elevated WSL2 initialization failed or was cancelled.' }
+      }
+    }
+    if (-not (Test-Path -LiteralPath $statusPath)) { throw 'WSL2 initialization did not produce a status result.' }
+    $wslStatus = Get-Content -Raw -LiteralPath $statusPath | ConvertFrom-Json
+    if ($wslStatus.status -eq 'restart_required') { throw $wslStatus.message }
+    if ($wslStatus.status -ne 'ready') { throw "WSL2 initialization failed: $($wslStatus.message)" }
+    Write-Host "WSL2_INITIALIZATION_PASS distribution=$($wslStatus.distribution) user=nvidia"
+    Write-Host 'DEMO_CREDENTIAL_NOTICE WSL user=nvidia password=nvidia. This weak credential is for the isolated demo appliance only.' -ForegroundColor Yellow
+  }
   $modelsRoot = if ($isArm64) { Join-Path $comfyRoot 'models' } else { Join-Path $comfyRoot 'portable\ComfyUI_windows_portable\ComfyUI\models' }
   foreach ($model in $models) {
     $destination = Join-Path $modelsRoot $model.Relative
