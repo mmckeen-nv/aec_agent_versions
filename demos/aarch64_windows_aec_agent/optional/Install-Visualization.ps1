@@ -21,6 +21,15 @@ function Find-Blender {
     Sort-Object FullName -Descending | Select-Object -First 1
 }
 
+function Test-NativeWindowsArm64 {
+  # RuntimeInformation describes the PowerShell process. Windows PowerShell
+  # may itself be x64-emulated on ARM64, so inspect native machine signals too.
+  $candidates = @($env:PROCESSOR_ARCHITEW6432, $env:PROCESSOR_ARCHITECTURE)
+  try { $candidates += (Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -Name PROCESSOR_ARCHITECTURE -ErrorAction Stop).PROCESSOR_ARCHITECTURE } catch {}
+  try { $candidates += (Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop).OSArchitecture } catch {}
+  return [bool]($candidates | Where-Object { $_ -match '(?i)^ARM64$|ARM\s*64' } | Select-Object -First 1)
+}
+
 function Receive-LargeFile([string]$Uri, [string]$Destination, [long]$MinimumBytes) {
   if ((Test-Path -LiteralPath $Destination) -and (Get-Item -LiteralPath $Destination).Length -ge $MinimumBytes) {
     Write-Host "DOWNLOAD_CURRENT path=$Destination"
@@ -64,7 +73,8 @@ if ($EnableBlender) {
 
 if ($EnableComfyUI) {
   $comfyRoot = Join-Path $integrationRoot 'comfyui-aec'
-  $isArm64 = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [System.Runtime.InteropServices.Architecture]::Arm64
+  $isArm64 = Test-NativeWindowsArm64
+  Write-Host "COMFYUI_PLATFORM_DETECTED arm64=$($isArm64.ToString().ToLowerInvariant()) process_architecture=$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
   $modelsRoot = if ($isArm64) { Join-Path $comfyRoot 'models' } else { Join-Path $comfyRoot 'portable\ComfyUI_windows_portable\ComfyUI\models' }
   foreach ($model in $models) {
     Receive-LargeFile -Uri $model.Url -Destination (Join-Path $modelsRoot $model.Relative) -MinimumBytes $model.Minimum

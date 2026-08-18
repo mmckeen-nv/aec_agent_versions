@@ -9,6 +9,13 @@ $hermesCommand = Get-Command hermes -ErrorAction SilentlyContinue
 $bundledHermes = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\venv\Scripts\hermes.exe'
 $hermes = if ($hermesCommand) { $hermesCommand.Source } elseif (Test-Path $bundledHermes) { $bundledHermes } else { $null }
 
+function Test-NativeWindowsArm64 {
+  $candidates = @($env:PROCESSOR_ARCHITEW6432, $env:PROCESSOR_ARCHITECTURE)
+  try { $candidates += (Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -Name PROCESSOR_ARCHITECTURE -ErrorAction Stop).PROCESSOR_ARCHITECTURE } catch {}
+  try { $candidates += (Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop).OSArchitecture } catch {}
+  return [bool]($candidates | Where-Object { $_ -match '(?i)^ARM64$|ARM\s*64' } | Select-Object -First 1)
+}
+
 $checks = [ordered]@{
   'Rhino 8' = Test-Path 'C:\Program Files\Rhino 8\System\Rhino.exe'
   'Hermes' = [bool]$hermes
@@ -60,7 +67,7 @@ if (Test-Path $statePath) {
       $comfyText = $comfyStats | ConvertTo-Json -Depth 10
       if ($comfyText -match '(?i)cuda' -and $comfyText -match '(?i)nvidia') { Write-Host 'PASS  ComfyUI reports NVIDIA CUDA' }
       else { Write-Host 'FAIL  ComfyUI does not report NVIDIA CUDA'; $failures.Add('ComfyUI CUDA backend') }
-      $isArm64 = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [System.Runtime.InteropServices.Architecture]::Arm64
+      $isArm64 = Test-NativeWindowsArm64
       if ($isArm64 -and ($comfyStats.system.os -ne 'linux' -or $comfyStats.system.pytorch_version -notmatch '\+cu130')) {
         Write-Host 'FAIL  ARM64 ComfyUI is not the native WSL2 CUDA 13 backend'; $failures.Add('ARM64 ComfyUI backend')
       } elseif ($isArm64) { Write-Host 'PASS  Native ARM64 WSL2 CUDA 13 ComfyUI backend' }
