@@ -1,12 +1,15 @@
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$StatusPath)
+param(
+  [Parameter(Mandatory)][string]$StatusPath,
+  [Parameter(Mandatory)][string]$ExpectedRevision
+)
 
 $ErrorActionPreference = 'Stop'
 
 function Save-Status([string]$Status, [string]$Message = '', [string]$Distribution = '') {
   $parent = Split-Path -Parent $StatusPath
   New-Item -ItemType Directory -Force -Path $parent | Out-Null
-  [IO.File]::WriteAllText($StatusPath, (@{ status = $Status; message = $Message; distribution = $Distribution } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
+  [IO.File]::WriteAllText($StatusPath, (@{ status = $Status; message = $Message; distribution = $Distribution; initializer_revision = $ExpectedRevision } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
 }
 
 try {
@@ -28,11 +31,9 @@ try {
 
   $wsl = (Get-Command wsl.exe -ErrorAction Stop).Source
   & $wsl --set-default-version 2
-  # Store-managed, inbox, and enterprise-managed WSL installations service
-  # updates differently. These are best-effort; the running WSL2 kernel and
-  # Ubuntu checks below are the authoritative gates.
-  & $wsl --update --web-download
-  if ($LASTEXITCODE) { & $wsl --update }
+  # Do not run `wsl --update` here. Store-managed, inbox, and enterprise WSL
+  # service through incompatible channels. The live WSL2 kernel and Ubuntu
+  # checks below are the authoritative compatibility gates.
 
   $names = @()
   try { $names += (& $wsl --list --quiet 2>$null) | ForEach-Object { ($_ -replace "`0", '').Trim() } | Where-Object { $_ } } catch {}

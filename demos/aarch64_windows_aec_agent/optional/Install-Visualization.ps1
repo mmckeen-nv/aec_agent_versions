@@ -111,9 +111,12 @@ if ($EnableComfyUI) {
     Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
   }
   if ($isArm64) {
+    $initializerRevision = '3'
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
+    $initializerHash = (Get-FileHash -LiteralPath $initializer -Algorithm SHA256).Hash
+    Write-Host "WSL_INITIALIZER revision=$initializerRevision sha256=$initializerHash path=$initializer"
     $wslAlreadyReady = $false
     $existingWsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
     Write-Host "WSL2_CHECK executable_present=$([bool]$existingWsl)"
@@ -128,23 +131,24 @@ if ($EnableComfyUI) {
         Write-Host "WSL_DEMO_USER_CHECK present=$($nvidiaUserPresent.ToString().ToLowerInvariant()) user=nvidia"
         $wslAlreadyReady = $nvidiaUserPresent -and $wslKernelReady
         if ($wslAlreadyReady) {
-          [IO.File]::WriteAllText($statusPath, (@{ status = 'ready'; message = 'Existing WSL2 appliance passed sanity checks.'; distribution = $existingDistro } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
+          [IO.File]::WriteAllText($statusPath, (@{ status = 'ready'; message = 'Existing WSL2 appliance passed sanity checks.'; distribution = $existingDistro; initializer_revision = $initializerRevision } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
         }
       } catch { Write-Host "UBUNTU_CHECK installed=false detail=$($_.Exception.Message)" }
     }
     if (-not $wslAlreadyReady) {
       $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
       if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-        & $initializer -StatusPath $statusPath
+        & $initializer -StatusPath $statusPath -ExpectedRevision $initializerRevision
       } else {
         Write-Host 'WSL2 initialization requires one Windows administrator approval.' -ForegroundColor Yellow
-        $arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$initializer`" -StatusPath `"$statusPath`""
+        $arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$initializer`" -StatusPath `"$statusPath`" -ExpectedRevision `"$initializerRevision`""
         $process = Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList $arguments -Verb RunAs -Wait -PassThru
         if ($process.ExitCode -ne 0 -and -not (Test-Path -LiteralPath $statusPath)) { throw 'Elevated WSL2 initialization failed or was cancelled.' }
       }
     }
     if (-not (Test-Path -LiteralPath $statusPath)) { throw 'WSL2 initialization did not produce a status result.' }
     $wslStatus = Get-Content -Raw -LiteralPath $statusPath | ConvertFrom-Json
+    if ($wslStatus.initializer_revision -ne $initializerRevision) { throw "Stale WSL initializer result detected. Expected revision $initializerRevision but received '$($wslStatus.initializer_revision)'." }
     if ($wslStatus.status -eq 'restart_required') { throw $wslStatus.message }
     if ($wslStatus.status -ne 'ready') { throw "WSL2 initialization failed: $($wslStatus.message)" }
     Write-Host "WSL2_INITIALIZATION_PASS distribution=$($wslStatus.distribution) user=nvidia"
