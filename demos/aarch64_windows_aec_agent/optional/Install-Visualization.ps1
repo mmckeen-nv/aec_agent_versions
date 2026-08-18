@@ -104,22 +104,33 @@ if ($EnableComfyUI) {
   $comfyRoot = Join-Path $integrationRoot 'comfyui-aec'
   $isArm64 = Test-NativeWindowsArm64
   Write-Host "COMFYUI_PLATFORM_DETECTED arm64=$($isArm64.ToString().ToLowerInvariant()) process_architecture=$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
+  $modelsRoot = if ($isArm64) { Join-Path $comfyRoot 'models' } else { Join-Path $comfyRoot 'portable\ComfyUI_windows_portable\ComfyUI\models' }
+  foreach ($model in $models) {
+    $candidate = Join-Path $modelsRoot $model.Relative
+    $present = (Test-Path -LiteralPath $candidate) -and (Get-Item -LiteralPath $candidate).Length -ge $model.Minimum
+    Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
+  }
   if ($isArm64) {
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
     $wslAlreadyReady = $false
     $existingWsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
+    Write-Host "WSL2_CHECK executable_present=$([bool]$existingWsl)"
     if ($existingWsl) {
       try {
         $existingDistro = Find-Ubuntu2404Distribution $existingWsl.Source
         $kernel = ((& $existingWsl.Source -d $existingDistro -- uname -r | Select-Object -First 1) -replace "`0", '').Trim()
         & $existingWsl.Source -d $existingDistro -u root -- id -u nvidia *> $null
-        $wslAlreadyReady = ($LASTEXITCODE -eq 0 -and $kernel -match '(?i)WSL2')
+        $nvidiaUserPresent = $LASTEXITCODE -eq 0
+        $wslKernelReady = $kernel -match '(?i)WSL2'
+        Write-Host "UBUNTU_CHECK installed=true distribution=$existingDistro version=24.04 architecture=arm64 wsl2=$($wslKernelReady.ToString().ToLowerInvariant())"
+        Write-Host "WSL_DEMO_USER_CHECK present=$($nvidiaUserPresent.ToString().ToLowerInvariant()) user=nvidia"
+        $wslAlreadyReady = $nvidiaUserPresent -and $wslKernelReady
         if ($wslAlreadyReady) {
           [IO.File]::WriteAllText($statusPath, (@{ status = 'ready'; message = 'Existing WSL2 appliance passed sanity checks.'; distribution = $existingDistro } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
         }
-      } catch {}
+      } catch { Write-Host "UBUNTU_CHECK installed=false detail=$($_.Exception.Message)" }
     }
     if (-not $wslAlreadyReady) {
       $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -139,7 +150,6 @@ if ($EnableComfyUI) {
     Write-Host "WSL2_INITIALIZATION_PASS distribution=$($wslStatus.distribution) user=nvidia"
     Write-Host 'DEMO_CREDENTIAL_NOTICE WSL user=nvidia password=nvidia. This weak credential is for the isolated demo appliance only.' -ForegroundColor Yellow
   }
-  $modelsRoot = if ($isArm64) { Join-Path $comfyRoot 'models' } else { Join-Path $comfyRoot 'portable\ComfyUI_windows_portable\ComfyUI\models' }
   foreach ($model in $models) {
     $destination = Join-Path $modelsRoot $model.Relative
     if ($isArm64 -and -not (Test-Path -LiteralPath $destination)) {

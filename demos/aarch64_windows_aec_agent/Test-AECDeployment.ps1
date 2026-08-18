@@ -60,6 +60,30 @@ if (Test-Path $statePath) {
   if ($state.comfyui_enabled) {
     $comfyLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.cmd'
     if (Test-Path $comfyLauncher) { Write-Host 'PASS  Opted-in ComfyUI launcher and FLUX bundle' } else { Write-Host 'FAIL  Opted-in ComfyUI launcher'; $failures.Add('ComfyUI launcher') }
+    $isArm64 = Test-NativeWindowsArm64
+    $comfyRoot = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec'
+    if ($isArm64) {
+      $wslStatePath = Join-Path $comfyRoot 'wsl-initialization.json'
+      $wslCommand = Get-Command wsl.exe -ErrorAction SilentlyContinue
+      $wslState = if (Test-Path -LiteralPath $wslStatePath) { Get-Content -Raw -LiteralPath $wslStatePath | ConvertFrom-Json } else { $null }
+      if ($wslCommand -and $wslState.status -eq 'ready' -and $wslState.distribution) {
+        $kernel = ((& $wslCommand.Source -d $wslState.distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+        $release = ((& $wslCommand.Source -d $wslState.distribution -u root -- cat /etc/os-release 2>$null) -join "`n")
+        & $wslCommand.Source -d $wslState.distribution -u root -- id -u nvidia *> $null
+        if ($LASTEXITCODE -eq 0 -and $kernel -match '(?i)WSL2' -and $release -match '(?m)^VERSION_ID="?24\.04"?\s*$') { Write-Host "PASS  WSL2 Ubuntu 24.04 ARM64 appliance ($($wslState.distribution))" }
+        else { Write-Host 'FAIL  WSL2 Ubuntu appliance sanity check'; $failures.Add('WSL2 Ubuntu appliance') }
+      } else { Write-Host 'FAIL  WSL2 Ubuntu initialization state'; $failures.Add('WSL2 Ubuntu initialization state') }
+    }
+    $modelsRoot = if ($isArm64) { Join-Path $comfyRoot 'models' } else { Join-Path $comfyRoot 'portable\ComfyUI_windows_portable\ComfyUI\models' }
+    foreach ($model in @(
+      @{ Relative = 'diffusion_models\flux-2-klein-base-4b-fp8.safetensors'; Minimum = 4000000000 },
+      @{ Relative = 'text_encoders\qwen_3_4b.safetensors'; Minimum = 8000000000 },
+      @{ Relative = 'vae\flux2-vae.safetensors'; Minimum = 300000000 }
+    )) {
+      $path = Join-Path $modelsRoot $model.Relative
+      if ((Test-Path -LiteralPath $path) -and (Get-Item -LiteralPath $path).Length -ge $model.Minimum) { Write-Host "PASS  ComfyUI model $($model.Relative)" }
+      else { Write-Host "FAIL  ComfyUI model $($model.Relative)"; $failures.Add("ComfyUI model $($model.Relative)") }
+    }
     try { $comfyStats = Invoke-RestMethod -UseBasicParsing -Uri 'http://127.0.0.1:8188/system_stats' -TimeoutSec 5 } catch { $comfyStats = $null }
     if (-not $comfyStats) {
       Write-Host 'WARN  ComfyUI is installed but not running; launch a demo to exercise it.'
@@ -67,7 +91,6 @@ if (Test-Path $statePath) {
       $comfyText = $comfyStats | ConvertTo-Json -Depth 10
       if ($comfyText -match '(?i)cuda' -and $comfyText -match '(?i)nvidia') { Write-Host 'PASS  ComfyUI reports NVIDIA CUDA' }
       else { Write-Host 'FAIL  ComfyUI does not report NVIDIA CUDA'; $failures.Add('ComfyUI CUDA backend') }
-      $isArm64 = Test-NativeWindowsArm64
       if ($isArm64 -and ($comfyStats.system.os -ne 'linux' -or $comfyStats.system.pytorch_version -notmatch '\+cu130')) {
         Write-Host 'FAIL  ARM64 ComfyUI is not the native WSL2 CUDA 13 backend'; $failures.Add('ARM64 ComfyUI backend')
       } elseif ($isArm64) { Write-Host 'PASS  Native ARM64 WSL2 CUDA 13 ComfyUI backend' }
