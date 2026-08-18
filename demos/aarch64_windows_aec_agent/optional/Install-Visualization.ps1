@@ -30,6 +30,35 @@ function Test-NativeWindowsArm64 {
   return [bool]($candidates | Where-Object { $_ -match '(?i)^ARM64$|ARM\s*64' } | Select-Object -First 1)
 }
 
+function Find-Ubuntu2404Distribution([string]$WslPath) {
+  $names = [System.Collections.Generic.List[string]]::new()
+  try {
+    foreach ($line in (& $WslPath --list --quiet 2>$null)) {
+      $name = ($line -replace "`0", '').Trim()
+      if ($name) { $names.Add($name) }
+    }
+  } catch {}
+  try {
+    foreach ($key in (Get-ChildItem -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss' -ErrorAction Stop)) {
+      $name = (Get-ItemProperty -LiteralPath $key.PSPath -Name DistributionName -ErrorAction Stop).DistributionName
+      if ($name) { $names.Add([string]$name) }
+    }
+  } catch {}
+  $candidates = $names | Sort-Object @{ Expression = { if ($_ -eq 'Ubuntu-24.04') { 0 } elseif ($_ -eq 'Ubuntu') { 1 } else { 2 } } }, @{ Expression = { $_ } } -Unique
+  foreach ($name in $candidates) {
+    if ($name -notmatch '(?i)ubuntu') { continue }
+    try {
+      $release = ((& $WslPath -d $name -- cat /etc/os-release 2>$null) -join "`n")
+      $machine = ((& $WslPath -d $name -- uname -m 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+      if ($LASTEXITCODE -eq 0 -and $release -match '(?m)^ID=ubuntu\s*$' -and $release -match '(?m)^VERSION_ID="?24\.04"?\s*$' -and $machine -match '^(aarch64|arm64)$') {
+        return $name
+      }
+    } catch {}
+  }
+  $found = if ($names.Count) { ($names | Sort-Object -Unique) -join ', ' } else { 'none detected' }
+  throw "A native ARM64 Ubuntu 24.04 WSL2 distribution is required. Installed WSL distributions: $found. A distribution registered as 'Ubuntu' is supported when /etc/os-release reports 24.04."
+}
+
 function Receive-LargeFile([string]$Uri, [string]$Destination, [long]$MinimumBytes) {
   if ((Test-Path -LiteralPath $Destination) -and (Get-Item -LiteralPath $Destination).Length -ge $MinimumBytes) {
     Write-Host "DOWNLOAD_CURRENT path=$Destination"
@@ -94,17 +123,17 @@ if ($EnableComfyUI) {
   if ($isArm64) {
     $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
     if (-not $wsl) { throw 'ComfyUI on Windows ARM64 requires WSL2. Run wsl --install, restart Windows, and rerun deployment.' }
-    $distros = (& $wsl.Source --list --quiet) -replace "`0", ''
-    if ($distros -notcontains 'Ubuntu-24.04') { throw 'Ubuntu-24.04 is required for native ARM64 ComfyUI. Run wsl --install -d Ubuntu-24.04, restart if requested, then rerun deployment.' }
-    $linuxUser = (& $wsl.Source -d Ubuntu-24.04 -- id -un | Select-Object -First 1).Trim()
-    if (-not $linuxUser -or $linuxUser -eq 'root') { throw 'Ubuntu-24.04 must have a normal default user before deploying ComfyUI.' }
-    $setupScript = (& $wsl.Source -d Ubuntu-24.04 -- wslpath -a (Join-Path $PSScriptRoot 'install-comfy-wsl.sh') | Select-Object -First 1).Trim()
-    $linuxModels = (& $wsl.Source -d Ubuntu-24.04 -- wslpath -a $modelsRoot | Select-Object -First 1).Trim()
-    & $wsl.Source -d Ubuntu-24.04 -u root -- bash $setupScript $linuxUser $linuxModels
+    $wslDistro = Find-Ubuntu2404Distribution $wsl.Source
+    Write-Host "WSL_UBUNTU_DETECTED distribution=$wslDistro version=24.04 architecture=arm64"
+    $linuxUser = ((& $wsl.Source -d $wslDistro -- id -un | Select-Object -First 1) -replace "`0", '').Trim()
+    if (-not $linuxUser -or $linuxUser -eq 'root') { throw "$wslDistro must have a normal default user before deploying ComfyUI." }
+    $setupScript = ((& $wsl.Source -d $wslDistro -- wslpath -a (Join-Path $PSScriptRoot 'install-comfy-wsl.sh') | Select-Object -First 1) -replace "`0", '').Trim()
+    $linuxModels = ((& $wsl.Source -d $wslDistro -- wslpath -a $modelsRoot | Select-Object -First 1) -replace "`0", '').Trim()
+    & $wsl.Source -d $wslDistro -u root -- bash $setupScript $linuxUser $linuxModels
     if ($LASTEXITCODE) { throw 'Native ARM64 ComfyUI installation in WSL2 failed.' }
     # Keep one WSL client attached. WSL may idle-terminate the VM even while a
     # systemd unit is active; following the managed journal keeps inference alive.
-    $launcherText = "@echo off`r`nwsl.exe -d Ubuntu-24.04 -u root -- bash -lc `"systemctl start hermes-aec-comfyui.service; exec journalctl -fu hermes-aec-comfyui.service`"`r`nif errorlevel 1 pause`r`n"
+    $launcherText = "@echo off`r`nwsl.exe -d `"$wslDistro`" -u root -- bash -lc `"systemctl start hermes-aec-comfyui.service; exec journalctl -fu hermes-aec-comfyui.service`"`r`nif errorlevel 1 pause`r`n"
     $backend = 'wsl2-arm64-cu130'
   } else {
     $archive = Join-Path $comfyRoot "downloads\ComfyUI_windows_portable_nvidia-$comfyVersion.7z"
