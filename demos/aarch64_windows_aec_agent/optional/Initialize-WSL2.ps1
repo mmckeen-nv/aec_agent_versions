@@ -28,9 +28,11 @@ try {
 
   $wsl = (Get-Command wsl.exe -ErrorAction Stop).Source
   & $wsl --set-default-version 2
-  if ($LASTEXITCODE) { throw 'Could not set WSL default version to 2.' }
-  & $wsl --update
-  if ($LASTEXITCODE) { throw 'WSL update failed.' }
+  # Store-managed, inbox, and enterprise-managed WSL installations service
+  # updates differently. These are best-effort; the running WSL2 kernel and
+  # Ubuntu checks below are the authoritative gates.
+  & $wsl --update --web-download
+  if ($LASTEXITCODE) { & $wsl --update }
 
   $names = @()
   try { $names += (& $wsl --list --quiet 2>$null) | ForEach-Object { ($_ -replace "`0", '').Trim() } | Where-Object { $_ } } catch {}
@@ -62,6 +64,8 @@ try {
 
   & $wsl --set-version $distribution 2
   if ($LASTEXITCODE) { throw "Could not configure $distribution as WSL2." }
+  $kernel = ((& $wsl -d $distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+  if ($LASTEXITCODE -ne 0 -or $kernel -notmatch '(?i)WSL2') { throw "$distribution did not start with a WSL2 kernel after configuration (reported '$kernel')." }
   $initialize = 'set -e; id -u nvidia >/dev/null 2>&1 || useradd -m -s /bin/bash nvidia; echo nvidia:nvidia | chpasswd; usermod -aG sudo nvidia; printf "[boot]\nsystemd=true\n\n[user]\ndefault=nvidia\n" > /etc/wsl.conf'
   & $wsl -d $distribution -u root -- bash -lc $initialize
   if ($LASTEXITCODE) { throw "Could not initialize the nvidia demo user in $distribution." }
