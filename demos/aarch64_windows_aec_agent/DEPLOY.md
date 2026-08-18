@@ -20,7 +20,7 @@ credential behavior, independent connectivity test, and error guide.
 Blender and ComfyUI are independent opt-in deployment features. The installer asks about each.
 Answering No skips that component without failing the Rhino deployment. If Blender is selected,
 install Blender before deployment so the installer can add and auto-start pinned BlenderMCP 1.8.3.
-If ComfyUI is selected, deployment downloads the pinned NVIDIA portable build and approximately
+If ComfyUI is selected, deployment downloads the pinned NVIDIA build and approximately
 13 GB of FLUX.2 Klein model files; use a fast, stable connection because tradeshow internet may fail.
 
 The installer supplies the hardened AEC RhinoMCP plug-in. Do **not** separately install or register
@@ -50,6 +50,12 @@ checks Rhino, Hermes/OOBE, its managed Python bootstrap, and Git before changing
 4. If prompted, paste the NVIDIA API key. It is written only to the two local demo profile
    environments and is never added to Git.
 5. Answer the independent Blender and ComfyUI questions. Both default to No.
+
+On Windows ARM64, ComfyUI is installed natively inside WSL2 Ubuntu 24.04 with the CUDA 13
+PyTorch build. Install WSL2 first with `wsl --install -d Ubuntu-24.04` and restart Windows if
+requested. The installer copies the model weights into WSL's Linux filesystem and manages a
+systemd service on port 8188; it does not run the incompatible x64 Windows portable build under
+emulation. On x64 Windows, the pinned NVIDIA portable build remains the supported backend.
 6. Wait for `AEC_DEMOS_DEPLOYED`; its final line records both selections.
 
 The installer is safe to rerun. It installs the runtime version pinned in

@@ -41,7 +41,14 @@ if ($EnableBlender) {
   $blender = Find-Blender
   if (-not $blender) { throw 'Blender was selected but is not installed. Install Blender from https://www.blender.org/download/ and rerun deployment.' }
   if (-not (Test-Path -LiteralPath $hermesUv)) { throw 'Hermes uvx is missing; repair Hermes Desktop.' }
-  & $hermesUv --from "blender-mcp==$blenderMcpVersion" blender-mcp install-addon
+  $previousPythonUtf8 = $env:PYTHONUTF8
+  $env:PYTHONUTF8 = '1'
+  try {
+    & $hermesUv --from "blender-mcp==$blenderMcpVersion" blender-mcp install-addon
+  } finally {
+    if ($null -eq $previousPythonUtf8) { Remove-Item Env:PYTHONUTF8 -ErrorAction SilentlyContinue }
+    else { $env:PYTHONUTF8 = $previousPythonUtf8 }
+  }
   if ($LASTEXITCODE) { throw 'Pinned BlenderMCP add-on installation failed.' }
   $versionLine = (& $blender.FullName --version | Select-Object -First 1)
   if ($versionLine -notmatch 'Blender\s+(\d+\.\d+)') { throw "Could not determine Blender version from $($blender.FullName)." }
@@ -50,35 +57,54 @@ if ($EnableBlender) {
   Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'hermes_aec_blender_startup.py') -Destination (Join-Path $startupRoot 'hermes_aec_blender_startup.py') -Force
   $wrapperRoot = Join-Path $integrationRoot 'blender-mcp'
   New-Item -ItemType Directory -Force -Path $wrapperRoot | Out-Null
-  $wrapper = "@echo off`r`nset DISABLE_TELEMETRY=true`r`n`"$hermesUv`" --from blender-mcp==$blenderMcpVersion blender-mcp %*`r`n"
+  $wrapper = "@echo off`r`nset DISABLE_TELEMETRY=true`r`nset PYTHONUTF8=1`r`n`"$hermesUv`" --from blender-mcp==$blenderMcpVersion blender-mcp %*`r`n"
   Set-Content -LiteralPath (Join-Path $wrapperRoot 'blender-mcp.cmd') -Value $wrapper -Encoding ascii
   Write-Host "BLENDER_INTEGRATION_READY version=$($Matches[1]) mcp=$blenderMcpVersion port=9876"
 }
 
 if ($EnableComfyUI) {
   $comfyRoot = Join-Path $integrationRoot 'comfyui-aec'
-  $archive = Join-Path $comfyRoot "downloads\ComfyUI_windows_portable_nvidia-$comfyVersion.7z"
-  Receive-LargeFile -Uri $comfyArchiveUrl -Destination $archive -MinimumBytes 1000000000
-  $portableRoot = Join-Path $comfyRoot 'portable'
-  $mainScript = Join-Path $portableRoot 'ComfyUI_windows_portable\ComfyUI\main.py'
-  if (-not (Test-Path -LiteralPath $mainScript)) {
-    $tar = Get-Command tar.exe -ErrorAction SilentlyContinue
-    if (-not $tar) { throw 'Windows tar.exe is required to extract the official ComfyUI portable package.' }
-    $stage = Join-Path $comfyRoot ("stage-" + [guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Force -Path $stage | Out-Null
-    & $tar.Source -xf $archive -C $stage
-    if ($LASTEXITCODE -or -not (Test-Path -LiteralPath (Join-Path $stage 'ComfyUI_windows_portable\ComfyUI\main.py'))) { throw 'Official ComfyUI archive extraction failed.' }
-    if (Test-Path -LiteralPath $portableRoot) { Remove-Item -LiteralPath $portableRoot -Recurse -Force }
-    Move-Item -LiteralPath $stage -Destination $portableRoot
-  }
-  $modelsRoot = Join-Path $portableRoot 'ComfyUI_windows_portable\ComfyUI\models'
+  $isArm64 = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [System.Runtime.InteropServices.Architecture]::Arm64
+  $modelsRoot = if ($isArm64) { Join-Path $comfyRoot 'models' } else { Join-Path $comfyRoot 'portable\ComfyUI_windows_portable\ComfyUI\models' }
   foreach ($model in $models) {
     Receive-LargeFile -Uri $model.Url -Destination (Join-Path $modelsRoot $model.Relative) -MinimumBytes $model.Minimum
   }
-  $embeddedPython = Join-Path $portableRoot 'ComfyUI_windows_portable\python_embeded\python.exe'
-  if (-not (Test-Path -LiteralPath $embeddedPython)) { throw 'ComfyUI embedded Python is missing after extraction.' }
   $launcher = Join-Path $comfyRoot 'Start-AEC-ComfyUI.cmd'
-  $launcherText = "@echo off`r`n`"$embeddedPython`" -s `"$mainScript`" --listen 127.0.0.1 --port 8188 --windows-standalone-build --disable-auto-launch`r`n"
+  if ($isArm64) {
+    $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
+    if (-not $wsl) { throw 'ComfyUI on Windows ARM64 requires WSL2. Run wsl --install, restart Windows, and rerun deployment.' }
+    $distros = (& $wsl.Source --list --quiet) -replace "`0", ''
+    if ($distros -notcontains 'Ubuntu-24.04') { throw 'Ubuntu-24.04 is required for native ARM64 ComfyUI. Run wsl --install -d Ubuntu-24.04, restart if requested, then rerun deployment.' }
+    $linuxUser = (& $wsl.Source -d Ubuntu-24.04 -- id -un | Select-Object -First 1).Trim()
+    if (-not $linuxUser -or $linuxUser -eq 'root') { throw 'Ubuntu-24.04 must have a normal default user before deploying ComfyUI.' }
+    $setupScript = (& $wsl.Source -d Ubuntu-24.04 -- wslpath -a (Join-Path $PSScriptRoot 'install-comfy-wsl.sh') | Select-Object -First 1).Trim()
+    $linuxModels = (& $wsl.Source -d Ubuntu-24.04 -- wslpath -a $modelsRoot | Select-Object -First 1).Trim()
+    & $wsl.Source -d Ubuntu-24.04 -u root -- bash $setupScript $linuxUser $linuxModels
+    if ($LASTEXITCODE) { throw 'Native ARM64 ComfyUI installation in WSL2 failed.' }
+    # Keep one WSL client attached. WSL may idle-terminate the VM even while a
+    # systemd unit is active; following the managed journal keeps inference alive.
+    $launcherText = "@echo off`r`nwsl.exe -d Ubuntu-24.04 -u root -- bash -lc `"systemctl start hermes-aec-comfyui.service; exec journalctl -fu hermes-aec-comfyui.service`"`r`nif errorlevel 1 pause`r`n"
+    $backend = 'wsl2-arm64-cu130'
+  } else {
+    $archive = Join-Path $comfyRoot "downloads\ComfyUI_windows_portable_nvidia-$comfyVersion.7z"
+    Receive-LargeFile -Uri $comfyArchiveUrl -Destination $archive -MinimumBytes 1000000000
+    $portableRoot = Join-Path $comfyRoot 'portable'
+    $mainScript = Join-Path $portableRoot 'ComfyUI_windows_portable\ComfyUI\main.py'
+    if (-not (Test-Path -LiteralPath $mainScript)) {
+      $tar = Get-Command tar.exe -ErrorAction SilentlyContinue
+      if (-not $tar) { throw 'Windows tar.exe is required to extract the official ComfyUI portable package.' }
+      $stage = Join-Path $comfyRoot ("stage-" + [guid]::NewGuid().ToString('N'))
+      New-Item -ItemType Directory -Force -Path $stage | Out-Null
+      & $tar.Source -xf $archive -C $stage
+      if ($LASTEXITCODE -or -not (Test-Path -LiteralPath (Join-Path $stage 'ComfyUI_windows_portable\ComfyUI\main.py'))) { throw 'Official ComfyUI archive extraction failed.' }
+      if (Test-Path -LiteralPath $portableRoot) { Remove-Item -LiteralPath $portableRoot -Recurse -Force }
+      Move-Item -LiteralPath $stage -Destination $portableRoot
+    }
+    $embeddedPython = Join-Path $portableRoot 'ComfyUI_windows_portable\python_embeded\python.exe'
+    if (-not (Test-Path -LiteralPath $embeddedPython)) { throw 'ComfyUI embedded Python is missing after extraction.' }
+    $launcherText = "@echo off`r`n`"$embeddedPython`" -s `"$mainScript`" --listen 127.0.0.1 --port 8188 --windows-standalone-build --disable-auto-launch`r`n"
+    $backend = 'windows-portable'
+  }
   Set-Content -LiteralPath $launcher -Value $launcherText -Encoding ascii
   if (-not (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue)) {
     Start-Process -FilePath $launcher -WindowStyle Minimized
@@ -90,10 +116,11 @@ if ($EnableComfyUI) {
   } while (-not $stats -and (Get-Date) -lt $deadline)
   if (-not $stats) { throw 'ComfyUI did not become ready on 127.0.0.1:8188 within five minutes.' }
   $statsText = $stats | ConvertTo-Json -Depth 10
-  if ($statsText -notmatch '(?i)cuda|nvidia') { throw 'ComfyUI is online but did not report an NVIDIA/CUDA device.' }
+  if ($statsText -notmatch '(?i)cuda' -or $statsText -notmatch '(?i)nvidia') { throw 'ComfyUI is online but did not report an NVIDIA CUDA device.' }
+  if ($isArm64 -and ($stats.system.os -ne 'linux' -or $stats.system.pytorch_version -notmatch '\+cu130')) { throw 'Windows ARM64 must use native WSL2 ComfyUI with the CUDA 13 PyTorch build.' }
   $objectInfo = Invoke-RestMethod -UseBasicParsing -Uri 'http://127.0.0.1:8188/object_info' -TimeoutSec 30
   foreach ($node in @('UNETLoader', 'CLIPLoader', 'VAELoader', 'LoadImage', 'SaveImage')) {
     if (-not $objectInfo.$node) { throw "ComfyUI required node is unavailable: $node" }
   }
-  Write-Host "COMFYUI_INTEGRATION_READY version=$comfyVersion port=8188 model=flux-2-klein-base-4b-fp8"
+  Write-Host "COMFYUI_INTEGRATION_READY version=$comfyVersion backend=$backend port=8188 model=flux-2-klein-base-4b-fp8"
 }
