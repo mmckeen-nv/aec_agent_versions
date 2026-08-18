@@ -54,10 +54,9 @@ try {
   }
   if (-not $distribution) {
     & $wsl --install -d Ubuntu-24.04 --no-launch
-    if ($LASTEXITCODE) { throw 'Ubuntu 24.04 installation through WSL failed.' }
     $distribution = 'Ubuntu-24.04'
     $release = ((& $wsl -d $distribution -u root -- cat /etc/os-release 2>$null) -join "`n")
-    if ($LASTEXITCODE -ne 0 -or $release -notmatch '(?m)^VERSION_ID="?24\.04"?\s*$') {
+    if ($release -notmatch '(?m)^VERSION_ID="?24\.04"?\s*$') {
       Save-Status 'restart_required' 'Ubuntu 24.04 was installed. Restart Windows, then rerun deployment to initialize it.' $distribution
       exit 0
     }
@@ -66,10 +65,9 @@ try {
   $kernel = ((& $wsl -d $distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
   if ($kernel -notmatch '(?i)WSL2') {
     & $wsl --set-version $distribution 2
-    if ($LASTEXITCODE) { throw "Could not configure $distribution as WSL2 (kernel before conversion: '$kernel')." }
     $kernel = ((& $wsl -d $distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
   }
-  if ($LASTEXITCODE -ne 0 -or $kernel -notmatch '(?i)WSL2') { throw "$distribution did not start with a WSL2 kernel after configuration (reported '$kernel')." }
+  if ($kernel -notmatch '(?i)WSL2') { throw "$distribution did not start with a WSL2 kernel after configuration (reported '$kernel')." }
   $initialize = 'set -e; id -u nvidia >/dev/null 2>&1 || useradd -m -s /bin/bash nvidia; echo nvidia:nvidia | chpasswd; usermod -aG sudo nvidia; printf "[boot]\nsystemd=true\n\n[user]\ndefault=nvidia\n" > /etc/wsl.conf'
   & $wsl -d $distribution -u root -- bash -lc $initialize
   if ($LASTEXITCODE) { throw "Could not initialize the nvidia demo user in $distribution." }
