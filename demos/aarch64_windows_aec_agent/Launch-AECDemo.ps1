@@ -33,12 +33,15 @@ if ($state.blender_enabled) {
   $blender = Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
   if (-not $blender) { throw 'Blender was enabled during deployment but is no longer installed.' }
   if (-not (Get-Process blender -ErrorAction SilentlyContinue)) { Start-Process -FilePath $blender.FullName }
-  $blenderDeadline = (Get-Date).AddSeconds(90)
+  # Blender 5.x can spend several minutes on first-run extension discovery and
+  # shader/cache initialization before its startup timer runs.
+  $blenderDeadline = (Get-Date).AddMinutes(4)
   do {
     Start-Sleep -Seconds 2
     $blenderReady = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue
   } while (-not $blenderReady -and (Get-Date) -lt $blenderDeadline)
-  if (-not $blenderReady) { throw 'Blender opened, but the managed BlenderMCP server did not start on port 9876.' }
+  if (-not $blenderReady) { throw 'Blender opened, but the managed BlenderMCP server did not start on port 9876 within four minutes. In Blender, enable Interface: Blender MCP and click Start MCP Server.' }
+  Write-LaunchLog "BLENDER_READY port=$($state.blender_port) owner=$($blenderReady.OwningProcess)"
 }
 
 if ($state.comfyui_enabled) {
@@ -75,14 +78,26 @@ if ($Demo -eq 'FullBuild') {
   # Rhino executes /runscript before a document finishes opening, and opening
   # the document then tears down the listener. Wait for the actual document
   # window before starting MCP so Hermes never observes that transient port.
-  $uiDeadline = (Get-Date).AddSeconds(60)
+  $documentStem = [IO.Path]::GetFileNameWithoutExtension($working)
+  $uiDeadline = (Get-Date).AddSeconds(90)
+  $documentProcess = $null
   do {
     Start-Sleep -Seconds 1
-    $rhinoProcess.Refresh()
-  } while (($rhinoProcess.MainWindowHandle -eq 0 -or -not $rhinoProcess.Responding) -and (Get-Date) -lt $uiDeadline)
-  if ($rhinoProcess.MainWindowHandle -eq 0 -or -not $rhinoProcess.Responding) {
-    throw 'Rhino started but its document window did not become ready within 60 seconds.'
+    # Rhino may delegate the file-open request to an existing process, making
+    # the PID returned by Start-Process a short-lived bootstrapper. Locate the
+    # real document window by its unique timestamped working-copy filename.
+    $documentProcess = Get-Process Rhino -ErrorAction SilentlyContinue |
+      Where-Object { $_.MainWindowHandle -ne 0 -and $_.Responding -and $_.MainWindowTitle -like "*$documentStem*" } |
+      Select-Object -First 1
+    if (-not $documentProcess -and -not $rhinoProcess.HasExited) {
+      $rhinoProcess.Refresh()
+      if ($rhinoProcess.MainWindowHandle -ne 0 -and $rhinoProcess.Responding) { $documentProcess = $rhinoProcess }
+    }
+  } while (-not $documentProcess -and (Get-Date) -lt $uiDeadline)
+  if (-not $documentProcess) {
+    throw "Rhino started but the '$documentStem' document window did not become ready within 90 seconds."
   }
+  Write-LaunchLog "RHINO_DOCUMENT_READY pid=$($documentProcess.Id) title=$($documentProcess.MainWindowTitle)"
   Start-Sleep -Seconds 3
   if (-not ('AECWinFocus' -as [type])) {
     Add-Type @'
@@ -94,13 +109,23 @@ public static class AECWinFocus {
 }
 '@
   }
-  [AECWinFocus]::ShowWindow($rhinoProcess.MainWindowHandle, 9) | Out-Null
-  if (-not [AECWinFocus]::SetForegroundWindow($rhinoProcess.MainWindowHandle)) {
-    throw 'Could not activate the Rhino document window.'
-  }
   $shell = New-Object -ComObject WScript.Shell
-  $shell.SendKeys('{ESC}')
-  $shell.SendKeys('AECMCPStart{ENTER}')
+  $focusDeadline = (Get-Date).AddSeconds(30)
+  $activated = $false
+  do {
+    [AECWinFocus]::ShowWindow($documentProcess.MainWindowHandle, 9) | Out-Null
+    $activated = [bool]$shell.AppActivate($documentProcess.Id)
+    if (-not $activated) { $activated = [AECWinFocus]::SetForegroundWindow($documentProcess.MainWindowHandle) }
+    if (-not $activated) { Start-Sleep -Milliseconds 500 }
+  } while (-not $activated -and (Get-Date) -lt $focusDeadline)
+  if (-not $activated -and -not (Test-RhinoMCPReady)) {
+    throw "Could not activate the Rhino window for '$documentStem' after 30 seconds, so AECMCPStart could not be sent safely."
+  }
+  Write-LaunchLog "RHINO_ACTIVATION activated=$activated mcp_already_ready=$(Test-RhinoMCPReady)"
+  if (-not (Test-RhinoMCPReady)) {
+    $shell.SendKeys('{ESC}')
+    $shell.SendKeys('AECMCPStart{ENTER}')
+  }
 
   # Opening a document can restart Rhino MCP. Do not expose Hermes to an
   # empty/stale document or a listener that is still cycling.
