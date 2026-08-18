@@ -77,7 +77,18 @@ if ($EnableComfyUI) {
   Write-Host "COMFYUI_PLATFORM_DETECTED arm64=$($isArm64.ToString().ToLowerInvariant()) process_architecture=$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)"
   $modelsRoot = if ($isArm64) { Join-Path $comfyRoot 'models' } else { Join-Path $comfyRoot 'portable\ComfyUI_windows_portable\ComfyUI\models' }
   foreach ($model in $models) {
-    Receive-LargeFile -Uri $model.Url -Destination (Join-Path $modelsRoot $model.Relative) -MinimumBytes $model.Minimum
+    $destination = Join-Path $modelsRoot $model.Relative
+    if ($isArm64 -and -not (Test-Path -LiteralPath $destination)) {
+      # Recover the three shallow model files from an earlier misdetected x64
+      # attempt without traversing or deleting its deeply nested Python tree.
+      $legacyModel = Join-Path $comfyRoot (Join-Path 'portable\ComfyUI_windows_portable\ComfyUI\models' $model.Relative)
+      if ((Test-Path -LiteralPath $legacyModel) -and (Get-Item -LiteralPath $legacyModel).Length -ge $model.Minimum) {
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destination) | Out-Null
+        Copy-Item -LiteralPath $legacyModel -Destination $destination
+        Write-Host "MODEL_RECOVERED_FROM_PORTABLE path=$destination"
+      }
+    }
+    Receive-LargeFile -Uri $model.Url -Destination $destination -MinimumBytes $model.Minimum
   }
   $launcher = Join-Path $comfyRoot 'Start-AEC-ComfyUI.cmd'
   if ($isArm64) {
