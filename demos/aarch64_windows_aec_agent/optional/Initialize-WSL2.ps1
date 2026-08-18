@@ -45,8 +45,8 @@ try {
   $distribution = $null
   $ubuntuCandidates = $names | Where-Object { $_ -match '(?i)ubuntu' } | Sort-Object @{ Expression = { if ($_ -eq 'Ubuntu-24.04') { 0 } elseif ($_ -eq 'Ubuntu') { 1 } else { 2 } } }, @{ Expression = { $_ } } -Unique
   foreach ($candidate in $ubuntuCandidates) {
-    $release = ((& $wsl -d $candidate -- cat /etc/os-release 2>$null) -join "`n")
-    $machine = ((& $wsl -d $candidate -- uname -m 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+    $release = ((& $wsl -d $candidate -u root -- cat /etc/os-release 2>$null) -join "`n")
+    $machine = ((& $wsl -d $candidate -u root -- uname -m 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
     if ($release -match '(?m)^ID=ubuntu\s*$' -and $release -match '(?m)^VERSION_ID="?24\.04"?\s*$' -and $machine -match '^(aarch64|arm64)$') {
       $distribution = $candidate
       break
@@ -63,9 +63,12 @@ try {
     }
   }
 
-  & $wsl --set-version $distribution 2
-  if ($LASTEXITCODE) { throw "Could not configure $distribution as WSL2." }
   $kernel = ((& $wsl -d $distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+  if ($kernel -notmatch '(?i)WSL2') {
+    & $wsl --set-version $distribution 2
+    if ($LASTEXITCODE) { throw "Could not configure $distribution as WSL2 (kernel before conversion: '$kernel')." }
+    $kernel = ((& $wsl -d $distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+  }
   if ($LASTEXITCODE -ne 0 -or $kernel -notmatch '(?i)WSL2') { throw "$distribution did not start with a WSL2 kernel after configuration (reported '$kernel')." }
   $initialize = 'set -e; id -u nvidia >/dev/null 2>&1 || useradd -m -s /bin/bash nvidia; echo nvidia:nvidia | chpasswd; usermod -aG sudo nvidia; printf "[boot]\nsystemd=true\n\n[user]\ndefault=nvidia\n" > /etc/wsl.conf'
   & $wsl -d $distribution -u root -- bash -lc $initialize

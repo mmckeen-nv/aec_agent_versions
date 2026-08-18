@@ -48,8 +48,8 @@ function Find-Ubuntu2404Distribution([string]$WslPath) {
   foreach ($name in $candidates) {
     if ($name -notmatch '(?i)ubuntu') { continue }
     try {
-      $release = ((& $WslPath -d $name -- cat /etc/os-release 2>$null) -join "`n")
-      $machine = ((& $WslPath -d $name -- uname -m 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+      $release = ((& $WslPath -d $name -u root -- cat /etc/os-release 2>$null) -join "`n")
+      $machine = ((& $WslPath -d $name -u root -- uname -m 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
       if ($LASTEXITCODE -eq 0 -and $release -match '(?m)^ID=ubuntu\s*$' -and $release -match '(?m)^VERSION_ID="?24\.04"?\s*$' -and $machine -match '^(aarch64|arm64)$') {
         return $name
       }
@@ -111,7 +111,7 @@ if ($EnableComfyUI) {
     Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
   }
   if ($isArm64) {
-    $initializerRevision = '3'
+    $initializerRevision = '4'
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
@@ -123,7 +123,7 @@ if ($EnableComfyUI) {
     if ($existingWsl) {
       try {
         $existingDistro = Find-Ubuntu2404Distribution $existingWsl.Source
-        $kernel = ((& $existingWsl.Source -d $existingDistro -- uname -r | Select-Object -First 1) -replace "`0", '').Trim()
+        $kernel = ((& $existingWsl.Source -d $existingDistro -u root -- uname -r | Select-Object -First 1) -replace "`0", '').Trim()
         & $existingWsl.Source -d $existingDistro -u root -- id -u nvidia *> $null
         $nvidiaUserPresent = $LASTEXITCODE -eq 0
         $wslKernelReady = $kernel -match '(?i)WSL2'
