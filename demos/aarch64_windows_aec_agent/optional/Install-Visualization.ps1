@@ -194,9 +194,14 @@ if ($EnableComfyUI) {
     $linuxUser = 'nvidia'
     $linuxUid = (((& $wsl.Source -d $wslDistro -u root -- bash -lc 'id -u nvidia 2>/dev/null || true') -join '') -replace "`0", '').Trim()
     if ($linuxUid -notmatch '^\d+$') { throw "$wslDistro did not retain the required nvidia demo user after initialization." }
-    $setupScript = ConvertTo-WslMountedPath (Join-Path $PSScriptRoot 'install-comfy-wsl.sh')
+    $setupSource = Join-Path $PSScriptRoot 'install-comfy-wsl.sh'
+    $setupStaged = Join-Path $comfyRoot 'install-comfy-wsl.lf.sh'
+    $setupText = [IO.File]::ReadAllText($setupSource).Replace("`r`n", "`n").Replace("`r", "`n")
+    [IO.File]::WriteAllText($setupStaged, $setupText, (New-Object Text.UTF8Encoding($false)))
+    $setupScript = ConvertTo-WslMountedPath $setupStaged
     $linuxModels = ConvertTo-WslMountedPath $modelsRoot
     Write-Host "WSL_PATHS_READY setup=$setupScript models=$linuxModels"
+    Write-Host "COMFY_WSL_BOOTSTRAP revision=2 line_endings=lf"
     & $wsl.Source -d $wslDistro -u root -- bash $setupScript $linuxUser $linuxModels
     if ($LASTEXITCODE) { throw 'Native ARM64 ComfyUI installation in WSL2 failed.' }
     # Keep one WSL client attached. WSL may idle-terminate the VM even while a
