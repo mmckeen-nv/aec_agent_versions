@@ -30,6 +30,14 @@ function Test-NativeWindowsArm64 {
   return [bool]($candidates | Where-Object { $_ -match '(?i)^ARM64$|ARM\s*64' } | Select-Object -First 1)
 }
 
+function ConvertTo-WslMountedPath([string]$WindowsPath) {
+  $absolute = [IO.Path]::GetFullPath($WindowsPath)
+  if ($absolute -notmatch '^([A-Za-z]):\\(.*)$') { throw "Only absolute Windows drive paths can be passed into WSL: $absolute" }
+  $drive = $Matches[1].ToLowerInvariant()
+  $tail = $Matches[2] -replace '\\', '/'
+  return "/mnt/$drive/$tail"
+}
+
 function Find-Ubuntu2404Distribution([string]$WslPath) {
   $names = [System.Collections.Generic.List[string]]::new()
   try {
@@ -186,8 +194,9 @@ if ($EnableComfyUI) {
     $linuxUser = 'nvidia'
     $linuxUid = (((& $wsl.Source -d $wslDistro -u root -- bash -lc 'id -u nvidia 2>/dev/null || true') -join '') -replace "`0", '').Trim()
     if ($linuxUid -notmatch '^\d+$') { throw "$wslDistro did not retain the required nvidia demo user after initialization." }
-    $setupScript = ((& $wsl.Source -d $wslDistro -- wslpath -a (Join-Path $PSScriptRoot 'install-comfy-wsl.sh') | Select-Object -First 1) -replace "`0", '').Trim()
-    $linuxModels = ((& $wsl.Source -d $wslDistro -- wslpath -a $modelsRoot | Select-Object -First 1) -replace "`0", '').Trim()
+    $setupScript = ConvertTo-WslMountedPath (Join-Path $PSScriptRoot 'install-comfy-wsl.sh')
+    $linuxModels = ConvertTo-WslMountedPath $modelsRoot
+    Write-Host "WSL_PATHS_READY setup=$setupScript models=$linuxModels"
     & $wsl.Source -d $wslDistro -u root -- bash $setupScript $linuxUser $linuxModels
     if ($LASTEXITCODE) { throw 'Native ARM64 ComfyUI installation in WSL2 failed.' }
     # Keep one WSL client attached. WSL may idle-terminate the VM even while a
