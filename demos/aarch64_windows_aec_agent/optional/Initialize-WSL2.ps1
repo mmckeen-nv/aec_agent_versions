@@ -68,7 +68,8 @@ try {
     $kernel = ((& $wsl -d $distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
   }
   if ($kernel -notmatch '(?i)WSL2') { throw "$distribution did not start with a WSL2 kernel after configuration (reported '$kernel')." }
-  $initialize = 'set -e; id -u nvidia >/dev/null 2>&1 || useradd -m -s /bin/bash nvidia; echo nvidia:nvidia | chpasswd; usermod -aG sudo nvidia; printf "[user]\ndefault=nvidia\n" > /etc/wsl.conf'
+  # Base64 avoids wsl.exe/bash argument conversion corrupting embedded newlines.
+  $initialize = 'set -e; id -u nvidia >/dev/null 2>&1 || useradd -m -s /bin/bash nvidia; echo nvidia:nvidia | chpasswd; usermod -aG sudo nvidia; echo W3VzZXJdCmRlZmF1bHQ9bnZpZGlhCg== | base64 -d > /etc/wsl.conf; test $(base64 -w0 /etc/wsl.conf) = W3VzZXJdCmRlZmF1bHQ9bnZpZGlhCg=='
   & $wsl -d $distribution -u root -- bash -lc $initialize
   if ($LASTEXITCODE) { throw "Could not initialize the nvidia demo user in $distribution." }
   & $wsl --terminate $distribution

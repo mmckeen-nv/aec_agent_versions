@@ -121,7 +121,7 @@ if ($EnableComfyUI) {
     Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
   }
   if ($isArm64) {
-    $initializerRevision = '8'
+    $initializerRevision = '9'
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
@@ -137,9 +137,14 @@ if ($EnableComfyUI) {
         $nvidiaUid = (((& $existingWsl.Source -d $existingDistro -u root -- bash -lc 'id -u nvidia 2>/dev/null || true') -join '') -replace "`0", '').Trim()
         $nvidiaUserPresent = $nvidiaUid -match '^\d+$'
         $wslKernelReady = $kernel -match '(?i)WSL2'
+        # Repair this on every run. Earlier installers could create a malformed
+        # file when wsl.exe consumed quoted newline escapes.
+        & $existingWsl.Source -d $existingDistro -u root -- bash -c 'echo W3VzZXJdCmRlZmF1bHQ9bnZpZGlhCg== | base64 -d > /etc/wsl.conf && test $(base64 -w0 /etc/wsl.conf) = W3VzZXJdCmRlZmF1bHQ9bnZpZGlhCg=='
+        $wslConfigReady = $LASTEXITCODE -eq 0
         Write-Host "UBUNTU_CHECK installed=true distribution=$existingDistro version=24.04 architecture=arm64 wsl2=$($wslKernelReady.ToString().ToLowerInvariant())"
         Write-Host "WSL_DEMO_USER_CHECK present=$($nvidiaUserPresent.ToString().ToLowerInvariant()) user=nvidia"
-        $wslAlreadyReady = $nvidiaUserPresent -and $wslKernelReady
+        Write-Host "WSL_CONFIG_CHECK valid=$($wslConfigReady.ToString().ToLowerInvariant())"
+        $wslAlreadyReady = $nvidiaUserPresent -and $wslKernelReady -and $wslConfigReady
         if ($wslAlreadyReady) {
           [IO.File]::WriteAllText($statusPath, (@{ status = 'ready'; message = 'Existing WSL2 appliance passed sanity checks.'; distribution = $existingDistro; initializer_revision = $initializerRevision } | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
         }
