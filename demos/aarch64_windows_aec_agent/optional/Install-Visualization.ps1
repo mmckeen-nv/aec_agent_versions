@@ -212,7 +212,7 @@ if ($EnableComfyUI) {
     # Keep the WSL client attached to ComfyUI. This works without systemd and
     # prevents WSL from idling out while the demo is running.
     $linuxComfyRoot = "/home/$linuxUser/.local/share/hermes-aec/comfyui"
-    $launcherText = "@echo off`r`nwsl.exe -d `"$wslDistro`" -u `"$linuxUser`" -- `"$linuxComfyRoot/start-comfyui.sh`"`r`n"
+    $launcherText = "@echo off`r`nwsl.exe -d $wslDistro -u $linuxUser -- $linuxComfyRoot/start-comfyui.sh`r`n"
     $backend = 'wsl2-arm64-cu130'
   } else {
     $archive = Join-Path $comfyRoot "downloads\ComfyUI_windows_portable_nvidia-$comfyVersion.7z"
@@ -236,8 +236,16 @@ if ($EnableComfyUI) {
   }
   Set-Content -LiteralPath $launcher -Value $launcherText -Encoding ascii
   $comfyProcess = $null
+  $startupStdout = if ($isArm64) { Join-Path $comfyRoot 'comfyui-startup.stdout.log' } else { $null }
+  $startupStderr = if ($isArm64) { Join-Path $comfyRoot 'comfyui-startup.stderr.log' } else { $null }
   if (-not (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue)) {
-    $comfyProcess = Start-Process -FilePath $launcher -WindowStyle Minimized -PassThru
+    if ($isArm64) {
+      Remove-Item -LiteralPath $startupStdout, $startupStderr -Force -ErrorAction SilentlyContinue
+      $comfyProcess = Start-Process -FilePath $wsl.Source -ArgumentList @('-d', $wslDistro, '-u', $linuxUser, '--', "$linuxComfyRoot/start-comfyui.sh") -WindowStyle Hidden -RedirectStandardOutput $startupStdout -RedirectStandardError $startupStderr -PassThru
+      Write-Host "COMFYUI_PROCESS_LAUNCHED pid=$($comfyProcess.Id) distribution=$wslDistro user=$linuxUser"
+    } else {
+      $comfyProcess = Start-Process -FilePath $launcher -WindowStyle Minimized -PassThru
+    }
   }
   $deadline = (Get-Date).AddMinutes(5)
   do {
@@ -247,14 +255,17 @@ if ($EnableComfyUI) {
   } while (-not $stats -and (Get-Date) -lt $deadline)
   if (-not $stats) {
     if ($isArm64) {
-      $logLines = @(& $wsl.Source -d $wslDistro -u $linuxUser -- tail -n 120 "$linuxComfyRoot/comfyui.log" 2>$null)
+      $logLines = @()
+      foreach ($logPath in @($startupStdout, $startupStderr)) {
+        if (Test-Path -LiteralPath $logPath) { $logLines += @(Get-Content -LiteralPath $logPath -Tail 120 -ErrorAction SilentlyContinue) }
+      }
       if ($logLines.Count) {
         Write-Host 'COMFYUI_STARTUP_LOG_BEGIN' -ForegroundColor Yellow
         $logLines | ForEach-Object { Write-Host $_ }
         Write-Host 'COMFYUI_STARTUP_LOG_END' -ForegroundColor Yellow
       }
-      $insideWsl = @(& $wsl.Source -d $wslDistro -u $linuxUser -- curl -fsS --max-time 5 http://127.0.0.1:8188/system_stats 2>$null)
-      if ($LASTEXITCODE -eq 0 -and $insideWsl.Count) {
+      $insideWsl = @(& $wsl.Source -d $wslDistro -u $linuxUser -- bash -c 'curl -fsS --max-time 5 http://127.0.0.1:8188/system_stats 2>/dev/null || true')
+      if ($insideWsl.Count) {
         throw 'ComfyUI is running inside WSL2, but Windows cannot reach it on 127.0.0.1:8188. Check WSL localhost forwarding and Windows firewall policy.'
       }
     }

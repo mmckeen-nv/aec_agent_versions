@@ -45,6 +45,7 @@ echo "COMFY_PROCESS_START user=\$(id -un) root=\$(pwd)"
 exec venv/bin/python ComfyUI/main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch
 EOF
 chmod 0755 "$install_root/start-comfyui.sh"
-chown "$target_user:$target_user" "$install_root/start-comfyui.sh"
+touch "$install_root/comfyui.log"
+chown "$target_user:$target_user" "$install_root/start-comfyui.sh" "$install_root/comfyui.log"
 runuser -u "$target_user" -- "$install_root/venv/bin/python" -c 'import torch; assert torch.cuda.is_available(); print("WSL_CUDA_PASS", torch.__version__, torch.version.cuda, torch.cuda.get_device_name(0))'
 echo "COMFY_WSL_INSTALL_READY root=$install_root startup=attached-launcher"
