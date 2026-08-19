@@ -107,6 +107,13 @@ Follow `depth_and_segmentation.md`. Output to `v_YYYYMMDD_HHMM/segmentation/`.
 
 ### Step C — ComfyUI post-processing (Chrome window)
 
+Before any browser presentation, call `comfyui_health`. Submit the verified Blender beauty PNG
+with exactly one `comfyui_stylize_image` call, using a new absolute `.png` destination under
+`[project]/comfy_output/`, a stable idempotency key, and a prompt that preserves the building
+geometry and camera. Require `status=completed`, a non-zero `bytes` value, `sha256`, and the exact
+`output_path`. Do not treat the Blender render as the ComfyUI output and do not invent a path. If a
+receipt is uncertain, reconcile by repeating only the same payload and idempotency key.
+
 - Load the ComfyUI workflow from `[project]/comfy_source/[workflow].json`
   via the Hermes in Chrome MCP extension.
 - Connect the beauty PNG sequence from `v_YYYYMMDD_HHMM/png/` as the input.

@@ -99,7 +99,7 @@ $deployArguments = @{
 Write-Host 'HERMES_PROFILE_REFRESH managed=true backups=true'
 & (Join-Path $fullRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-full-build-windows'
 & (Join-Path $quickRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-modifications-windows'
-& (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -EnableBlender:$useBlender -Force:$Force
+& (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -EnableBlender:$useBlender -EnableComfyUI:$useComfyUI -Force:$Force
 
 $profiles = @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')
 $keyValue = $env:NVIDIA_API_KEY

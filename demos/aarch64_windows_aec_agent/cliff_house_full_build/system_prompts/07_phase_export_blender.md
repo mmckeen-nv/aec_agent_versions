@@ -201,12 +201,15 @@ throw new Exception("Snapshot saved=" + ok + " path=" + snapPath);
 
 Confirm the snapshot file exists and is non-zero size before continuing.
 
-### Step 5 — Typed FBX export and Blender import
+### Step 5 — Typed GLB export and Blender import
 
 Call `rhino_export_scene` once with a new absolute `.glb` path under the active phase work
 directory and `expected_units: Meters`. Refuse overwrite and require a completed receipt with a
 non-zero byte count. Call `blender_validate_handoff` with that export path plus the audited source
-IDs and layers. Then submit one `blender_apply_operations` batch whose first operation is
+IDs and layers. Then call `blender_import_handoff` with the verified GLB, a new working `.blend`
+path, `unit_scale=1.0`, and one stable idempotency key. This is the required import transaction: it
+imports, saves, frames, and foregrounds the exact MCP-connected Blender process. Do not submit a
+bare `blender_apply_operations` import batch whose first operation is
 `import_scene` with `path` set to the receipt path, `source_host: rhino`, `unit_scale: 1.0`, and a
 semantic collection name. GLB uses Rhino's dedicated glTF writer; do not use the interactive FBX
 exporter, pass `.3dm` to Blender, or ask the operator to export.

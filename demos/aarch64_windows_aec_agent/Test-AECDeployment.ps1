@@ -56,10 +56,23 @@ if (Test-Path $statePath) {
   if ($state.blender_enabled) {
     $blenderLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\blender-mcp.cmd'
     if (Test-Path $blenderLauncher) { Write-Host 'PASS  Opted-in BlenderMCP launcher' } else { Write-Host 'FAIL  Opted-in BlenderMCP launcher'; $failures.Add('BlenderMCP launcher') }
+    $blenderListener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($blenderListener) {
+      $markerPath = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\active-instance.json'
+      try { $marker = Get-Content -Raw -LiteralPath $markerPath -ErrorAction Stop | ConvertFrom-Json } catch { $marker = $null }
+      if ($marker -and $marker.process_id -eq $blenderListener.OwningProcess) { Write-Host "PASS  BlenderMCP instance ownership PID $($marker.process_id)" }
+      else { Write-Host 'FAIL  BlenderMCP listener and managed instance marker disagree'; $failures.Add('BlenderMCP instance ownership') }
+    } else { Write-Host 'WARN  BlenderMCP is installed but Blender is not running.' }
   } else { Write-Host 'SKIP  Blender was not selected during deployment.' }
   if ($state.comfyui_enabled) {
     $comfyLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.cmd'
     if (Test-Path $comfyLauncher) { Write-Host 'PASS  Opted-in ComfyUI launcher and FLUX bundle' } else { Write-Host 'FAIL  Opted-in ComfyUI launcher'; $failures.Add('ComfyUI launcher') }
+    foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
+      $configPath = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\config.yaml"
+      $configText = if (Test-Path -LiteralPath $configPath) { Get-Content -Raw -LiteralPath $configPath } else { '' }
+      if ($configText -match '(?m)^\s*- comfyui_health\s*$' -and $configText -match '(?m)^\s*- comfyui_stylize_image\s*$') { Write-Host "PASS  ComfyUI tools registered in $profile" }
+      else { Write-Host "FAIL  ComfyUI tools missing from $profile"; $failures.Add("ComfyUI tools in $profile") }
+    }
     $isArm64 = Test-NativeWindowsArm64
     $comfyRoot = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec'
     if ($isArm64) {
