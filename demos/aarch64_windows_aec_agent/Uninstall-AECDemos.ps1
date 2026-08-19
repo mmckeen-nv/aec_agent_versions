@@ -25,8 +25,44 @@ function Assert-ChildPath([string]$Path, [string]$Root) {
 function Remove-ManagedPath([string]$Path, [string]$Root) {
   $safePath = Assert-ChildPath -Path $Path -Root $Root
   if (Test-Path -LiteralPath $safePath) {
-    Remove-Item -LiteralPath $safePath -Recurse -Force
+    try {
+      Remove-Item -LiteralPath $safePath -Recurse -Force
+    } catch {
+      # Windows PowerShell 5.1 cannot traverse some deeply nested Python package
+      # paths. The validated extended-length path lets .NET remove that same
+      # exact directory without weakening the child-path safety check above.
+      if (-not [IO.Directory]::Exists($safePath)) { throw }
+      $extendedPath = if ($safePath.StartsWith('\\')) {
+        '\\?\UNC\' + $safePath.Substring(2)
+      } else {
+        '\\?\' + $safePath
+      }
+      [IO.Directory]::Delete($extendedPath, $true)
+    }
+    if (Test-Path -LiteralPath $safePath) { throw "Managed uninstall target remains after deletion: $safePath" }
     Write-UninstallLog "REMOVED $safePath"
+  }
+}
+
+function Remove-WslComfyUI {
+  $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
+  if (-not $wsl) { return }
+  $rawNames = @(& $wsl.Source --list --quiet 2>$null)
+  foreach ($rawName in $rawNames) {
+    $distribution = ([string]$rawName -replace "`0", '').Trim()
+    if (-not $distribution) { continue }
+    try {
+      $release = ((& $wsl.Source -d $distribution -u root -- cat /etc/os-release 2>$null) -join "`n")
+      if ($release -notmatch '(?m)^ID=ubuntu\s*$' -or $release -notmatch '(?m)^VERSION_ID="?24\.04"?\s*$') { continue }
+      $cleanup = 'pkill -u nvidia -f "[C]omfyUI/main.py.*--port 8188" 2>/dev/null || true; managed=/home/nvidia/.local/share/hermes-aec/comfyui; test "$managed" = /home/nvidia/.local/share/hermes-aec/comfyui; rm -rf -- "$managed"'
+      & $wsl.Source -d $distribution -u root -- bash -c $cleanup
+      if ($LASTEXITCODE) { throw "WSL cleanup exited with code $LASTEXITCODE." }
+      Write-UninstallLog "REMOVED_WSL_COMFYUI distribution=$distribution path=/home/nvidia/.local/share/hermes-aec/comfyui"
+    } catch {
+      # Optional WSL cleanup must not prevent the remaining managed Windows
+      # components from being removed. Preserve a clear remediation record.
+      Write-UninstallLog "WARNING_WSL_COMFYUI_NOT_REMOVED distribution=$distribution error=$($_.Exception.Message)"
+    }
   }
 }
 
@@ -71,7 +107,7 @@ trap {
 }
 
 Write-Host 'This removes both Cliff House Hermes profiles, their local API-key files, desktop shortcuts,'
-Write-Host 'Daystrom DML, Hermes AEC runtime versions, and the managed AEC RhinoMCP plug-in.'
+Write-Host 'Daystrom DML, Hermes AEC runtime versions, optional Blender/ComfyUI integrations, and the managed AEC RhinoMCP plug-in.'
 Write-Host 'The downloaded repository and generated project/work files are preserved.'
 if (-not $Yes) {
   if ((Read-Host 'Type UNINSTALL to continue') -cne 'UNINSTALL') {
@@ -92,6 +128,7 @@ if (Get-Process Hermes -ErrorAction SilentlyContinue) { throw 'Close Hermes Desk
 $localHermes = Join-Path $env:LOCALAPPDATA 'hermes'
 $profilesRoot = Join-Path $localHermes 'profiles'
 $integrationsRoot = Join-Path $localHermes 'integrations'
+Remove-WslComfyUI
 foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
   Remove-ManagedPath -Path (Join-Path $profilesRoot $profile) -Root $profilesRoot
 }
@@ -102,6 +139,9 @@ Remove-ManagedPath -Path (Join-Path $integrationsRoot 'comfyui-aec') -Root $inte
 Remove-ManagedPath -Path (Join-Path $localHermes 'aec-demos') -Root $localHermes
 
 Get-ChildItem -LiteralPath (Join-Path $env:APPDATA 'Blender Foundation\Blender') -Filter 'hermes_aec_blender_startup.py' -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+  Remove-ManagedPath -Path $_.FullName -Root (Join-Path $env:APPDATA 'Blender Foundation\Blender')
+}
+Get-ChildItem -LiteralPath (Join-Path $env:APPDATA 'Blender Foundation\Blender') -Filter 'blender_mcp.py' -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
   Remove-ManagedPath -Path $_.FullName -Root (Join-Path $env:APPDATA 'Blender Foundation\Blender')
 }
 

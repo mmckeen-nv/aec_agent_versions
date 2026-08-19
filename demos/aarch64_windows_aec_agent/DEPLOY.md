@@ -164,6 +164,7 @@ Close Hermes Desktop and every Rhino window, then run:
 
 Type `UNINSTALL` at the confirmation prompt. The uninstaller removes only the two managed profiles,
 their credential files, the two shortcuts, Daystrom DML, Hermes AEC runtime versions, demo state,
-and the managed AEC RhinoMCP plug-in and registration. It then asks whether to uninstall Rhino 8.
+the managed Blender/ComfyUI integrations (including the WSL2 ComfyUI environment), and the managed
+AEC RhinoMCP plug-in and registration. The Ubuntu distribution is preserved. It then asks whether to uninstall Rhino 8.
 Answer `y` to invoke Rhino's registered McNeel uninstaller; a Windows elevation prompt may appear.
 The repository and generated project/work files are preserved.
