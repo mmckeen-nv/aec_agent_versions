@@ -121,7 +121,7 @@ if ($EnableComfyUI) {
     Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
   }
   if ($isArm64) {
-    $initializerRevision = '7'
+    $initializerRevision = '8'
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
@@ -201,12 +201,13 @@ if ($EnableComfyUI) {
     $setupScript = ConvertTo-WslMountedPath $setupStaged
     $linuxModels = ConvertTo-WslMountedPath $modelsRoot
     Write-Host "WSL_PATHS_READY setup=$setupScript models=$linuxModels"
-    Write-Host "COMFY_WSL_BOOTSTRAP revision=2 line_endings=lf"
+    Write-Host "COMFY_WSL_BOOTSTRAP revision=3 line_endings=lf mode=direct"
     & $wsl.Source -d $wslDistro -u root -- bash $setupScript $linuxUser $linuxModels
     if ($LASTEXITCODE) { throw 'Native ARM64 ComfyUI installation in WSL2 failed.' }
-    # Keep one WSL client attached. WSL may idle-terminate the VM even while a
-    # systemd unit is active; following the managed journal keeps inference alive.
-    $launcherText = "@echo off`r`nwsl.exe -d `"$wslDistro`" -u root -- bash -lc `"systemctl start hermes-aec-comfyui.service; exec journalctl -fu hermes-aec-comfyui.service`"`r`nif errorlevel 1 pause`r`n"
+    # Keep the WSL client attached to ComfyUI. This works without systemd and
+    # prevents WSL from idling out while the demo is running.
+    $linuxComfyRoot = "/home/$linuxUser/.local/share/hermes-aec/comfyui"
+    $launcherText = "@echo off`r`nwsl.exe -d `"$wslDistro`" -u `"$linuxUser`" -- bash -lc `"cd '$linuxComfyRoot' && exec venv/bin/python ComfyUI/main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch`"`r`nif errorlevel 1 pause`r`n"
     $backend = 'wsl2-arm64-cu130'
   } else {
     $archive = Join-Path $comfyRoot "downloads\ComfyUI_windows_portable_nvidia-$comfyVersion.7z"

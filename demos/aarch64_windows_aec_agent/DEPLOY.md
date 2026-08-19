@@ -56,8 +56,8 @@ PyTorch build. The deployment script enables the WSL2 Windows features, updates 
 Ubuntu 24.04 when needed, and initializes the deterministic demo account `nvidia` / `nvidia`.
 It will stop with a clear instruction if Windows requires a restart. This deliberately weak
 credential is suitable only for the isolated demo appliance and must not be reused elsewhere.
-The installer copies the model weights into WSL's Linux filesystem and manages a
-systemd service on port 8188; it does not run the incompatible x64 Windows portable build under
+The installer copies the model weights into WSL's Linux filesystem and uses an attached WSL
+launcher on port 8188; it does not require systemd or run the incompatible x64 Windows portable build under
 emulation. On x64 Windows, the pinned NVIDIA portable build remains the supported backend.
 6. Wait for `AEC_DEMOS_DEPLOYED`; its final line records both selections.
 

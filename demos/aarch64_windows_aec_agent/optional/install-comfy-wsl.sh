@@ -36,22 +36,5 @@ for mapping in \
 done
 chown -R "$target_user:$target_user" "$install_root"
 
-cat >/etc/systemd/system/hermes-aec-comfyui.service <<EOF
-[Unit]
-Description=Hermes AEC ComfyUI
-After=network.target
-
-[Service]
-Type=simple
-User=$target_user
-WorkingDirectory=$install_root
-ExecStart=$install_root/venv/bin/python ComfyUI/main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch
-Restart=on-failure
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl daemon-reload
-systemctl enable --now hermes-aec-comfyui.service
 runuser -u "$target_user" -- "$install_root/venv/bin/python" -c 'import torch; assert torch.cuda.is_available(); print("WSL_CUDA_PASS", torch.__version__, torch.version.cuda, torch.cuda.get_device_name(0))'
+echo "COMFY_WSL_INSTALL_READY root=$install_root startup=attached-launcher"
