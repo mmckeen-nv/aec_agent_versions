@@ -113,7 +113,7 @@ if ($EnableComfyUI) {
     Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
   }
   if ($isArm64) {
-    $initializerRevision = '5'
+    $initializerRevision = '6'
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
@@ -126,7 +126,7 @@ if ($EnableComfyUI) {
       try {
         $existingDistro = Find-Ubuntu2404Distribution $existingWsl.Source
         $kernel = ((& $existingWsl.Source -d $existingDistro -u root -- uname -r | Select-Object -First 1) -replace "`0", '').Trim()
-        $nvidiaUid = ((& $existingWsl.Source -d $existingDistro -u root -- id -u nvidia 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
+        $nvidiaUid = (((& $existingWsl.Source -d $existingDistro -u root -- bash -lc 'id -u nvidia 2>/dev/null || true') -join '') -replace "`0", '').Trim()
         $nvidiaUserPresent = $nvidiaUid -match '^\d+$'
         $wslKernelReady = $kernel -match '(?i)WSL2'
         Write-Host "UBUNTU_CHECK installed=true distribution=$existingDistro version=24.04 architecture=arm64 wsl2=$($wslKernelReady.ToString().ToLowerInvariant())"
@@ -174,10 +174,18 @@ if ($EnableComfyUI) {
   if ($isArm64) {
     $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
     if (-not $wsl) { throw 'ComfyUI on Windows ARM64 requires WSL2. Run wsl --install, restart Windows, and rerun deployment.' }
-    $wslDistro = Find-Ubuntu2404Distribution $wsl.Source
+    $wslDistro = $null
+    $probeError = $null
+    $probeDeadline = (Get-Date).AddSeconds(60)
+    do {
+      try { $wslDistro = Find-Ubuntu2404Distribution $wsl.Source } catch { $probeError = $_.Exception.Message }
+      if (-not $wslDistro) { Start-Sleep -Seconds 2 }
+    } while (-not $wslDistro -and (Get-Date) -lt $probeDeadline)
+    if (-not $wslDistro) { throw "Ubuntu did not become ready within 60 seconds after initialization: $probeError" }
     Write-Host "WSL_UBUNTU_DETECTED distribution=$wslDistro version=24.04 architecture=arm64"
-    $linuxUser = ((& $wsl.Source -d $wslDistro -- id -un | Select-Object -First 1) -replace "`0", '').Trim()
-    if (-not $linuxUser -or $linuxUser -eq 'root') { throw "$wslDistro must have a normal default user before deploying ComfyUI." }
+    $linuxUser = 'nvidia'
+    $linuxUid = (((& $wsl.Source -d $wslDistro -u root -- bash -lc 'id -u nvidia 2>/dev/null || true') -join '') -replace "`0", '').Trim()
+    if ($linuxUid -notmatch '^\d+$') { throw "$wslDistro did not retain the required nvidia demo user after initialization." }
     $setupScript = ((& $wsl.Source -d $wslDistro -- wslpath -a (Join-Path $PSScriptRoot 'install-comfy-wsl.sh') | Select-Object -First 1) -replace "`0", '').Trim()
     $linuxModels = ((& $wsl.Source -d $wslDistro -- wslpath -a $modelsRoot | Select-Object -First 1) -replace "`0", '').Trim()
     & $wsl.Source -d $wslDistro -u root -- bash $setupScript $linuxUser $linuxModels
