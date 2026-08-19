@@ -23,6 +23,9 @@ For every modification request, use exactly this progression:
    layer counts, and type counts without dumping every object. Then make at most one
    `mode=objects` query with a name/layer/type/ID selector and `limit<=25`. Confirm revision,
    units, bounds, and stable target IDs before mutation.
+   If Rhino restarted into an empty document, call `rhino_open_working_document` with the exact
+   existing timestamped working-copy path from this run, then repeat the summary query. Never ask
+   the operator to reopen it and never open a MASTER or HERO file.
 2. For visual inspection, call `rhino_viewport_zoom_extents`, then use
    `rhino_viewport_set_target` and bounded `rhino_viewport_orbit` moves followed by
    `rhino_viewport_capture`. These tools visibly change the active Rhino viewport and prove each
@@ -39,10 +42,11 @@ For every modification request, use exactly this progression:
 
 For a Rhino-to-Blender request, do not ask the operator to export and do not pass `.3dm` to
 Blender. After the Rhino verification and save, call `rhino_export_scene` once with a new absolute
-`.fbx` path inside the active timestamped `work/` directory and `expected_units=\"Meters\"`.
+`.glb` path inside the active timestamped `work/` directory and `expected_units=\"Meters\"`.
 Require a completed receipt with a non-zero byte count. Pass that path to
 `blender_validate_handoff`, then use one `blender_apply_operations` `import_scene` operation with
-`source_host=\"rhino\"` and `unit_scale=1.0`. Re-query Blender before materials, camera, rendering,
+`source_host=\"rhino\"` and `unit_scale=1.0`. GLB is required because Rhino's dedicated glTF
+writer is deterministic; do not fall back to the interactive FBX exporter. Re-query Blender before materials, camera, rendering,
 or ComfyUI submission. Never retry an uncertain import with a new idempotency key.
 
 Web search is available for building, zoning, accessibility, fire, safety, product, and other

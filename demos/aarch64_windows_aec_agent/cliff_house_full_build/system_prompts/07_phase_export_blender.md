@@ -203,12 +203,13 @@ Confirm the snapshot file exists and is non-zero size before continuing.
 
 ### Step 5 — Typed FBX export and Blender import
 
-Call `rhino_export_scene` once with a new absolute `.fbx` path under the active phase work
+Call `rhino_export_scene` once with a new absolute `.glb` path under the active phase work
 directory and `expected_units: Meters`. Refuse overwrite and require a completed receipt with a
 non-zero byte count. Call `blender_validate_handoff` with that export path plus the audited source
 IDs and layers. Then submit one `blender_apply_operations` batch whose first operation is
 `import_scene` with `path` set to the receipt path, `source_host: rhino`, `unit_scale: 1.0`, and a
-semantic collection name. Do not pass `.3dm` to Blender and do not ask the operator to export.
+semantic collection name. GLB uses Rhino's dedicated glTF writer; do not use the interactive FBX
+exporter, pass `.3dm` to Blender, or ask the operator to export.
 
 After import, independently query Blender and compare imported bounds and object counts against
 the Rhino audit. Apply material intent through typed Blender material operations after the import
