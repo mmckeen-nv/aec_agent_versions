@@ -4,6 +4,7 @@ param(
   [int]$RhinoPort = 1999,
   [switch]$EnableBlender,
   [switch]$EnableComfyUI,
+  [switch]$SkipRhinoMCPInstall,
   [switch]$Force
 )
 
@@ -50,7 +51,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $resolvedTarget 'Install.ps1'))) {
 }
 
 try {
-  & (Join-Path $resolvedTarget 'Install.ps1') -RhinoPort $RhinoPort -EnableBlender:$EnableBlender -EnableComfyUI:$EnableComfyUI
+  & (Join-Path $resolvedTarget 'Install.ps1') -RhinoPort $RhinoPort -EnableBlender:$EnableBlender -EnableComfyUI:$EnableComfyUI -SkipRhinoMCPInstall:$SkipRhinoMCPInstall
   if ($LASTEXITCODE) { throw "Runtime installer exited with code $LASTEXITCODE." }
 } catch {
   if ($backupTarget -and (Test-Path -LiteralPath $backupTarget)) {
