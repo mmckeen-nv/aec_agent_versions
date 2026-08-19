@@ -56,6 +56,12 @@ if (Test-Path $statePath) {
   if ($state.blender_enabled) {
     $blenderLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\blender-mcp.cmd'
     if (Test-Path $blenderLauncher) { Write-Host 'PASS  Opted-in BlenderMCP launcher' } else { Write-Host 'FAIL  Opted-in BlenderMCP launcher'; $failures.Add('BlenderMCP launcher') }
+    foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
+      $configPath = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\config.yaml"
+      $configText = if (Test-Path -LiteralPath $configPath) { Get-Content -Raw -LiteralPath $configPath } else { '' }
+      if ($configText -match '(?m)^\s*- blender_render_archviz\s*$') { Write-Host "PASS  Deterministic Blender render registered in $profile" }
+      else { Write-Host "FAIL  Deterministic Blender render missing from $profile"; $failures.Add("Blender render tool in $profile") }
+    }
     $blenderListener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($blenderListener) {
       $markerPath = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\active-instance.json'

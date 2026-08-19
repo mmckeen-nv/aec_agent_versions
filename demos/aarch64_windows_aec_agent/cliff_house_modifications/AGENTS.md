@@ -51,13 +51,18 @@ not substitute a bare `import_scene` operation. GLB is required because Rhino's 
 writer is deterministic; do not fall back to the interactive FBX exporter. Re-query Blender before materials, camera, rendering,
 or ComfyUI submission. Never retry an uncertain import with a new idempotency key.
 
-For Blender-to-ComfyUI, render a new PNG inside the active run, verify that the Blender receipt is
-completed and the file is non-empty, then call `comfyui_health` and exactly one
+For Blender-to-ComfyUI, call `blender_render_archviz` once with a new PNG path, the active working
+`.blend` path, and one stable idempotency key. This tool owns the known-good camera, target, lights,
+render settings, PNG render, save, and visible presentation transaction. Do not guess operation
+names or assemble the normal demo render through `blender_apply_operations`; that lower-level tool
+is only for explicitly requested custom Blender changes and publishes its complete discriminated
+schema. Verify that the render receipt is completed and the PNG is non-empty, then call
+`comfyui_health` and exactly one
 `comfyui_stylize_image` transaction. Supply a new absolute PNG output path, an architecture prompt
 that explicitly preserves geometry and camera, and one stable idempotency key. Require a completed
 receipt with `bytes`, `sha256`, and `output_path`; return that exact path. Never claim ComfyUI ran
-from a Blender render alone, never invent an output path, and never route ComfyUI through
-`blender_apply_operations`.
+from a Blender render alone, never invent an output path, and never route ComfyUI through a Blender
+operation transaction.
 
 Web search is available for building, zoning, accessibility, fire, safety, product, and other
 research required by the demo. Prefer primary and governing sources when accuracy matters, cite

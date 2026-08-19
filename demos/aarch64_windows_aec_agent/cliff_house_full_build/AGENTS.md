@@ -25,7 +25,9 @@ selected phase and perform its read-only preflight. Do not mutate geometry befor
 1. Rhino MCP imports the source-curve model from `projects/cliff_house_02/rhino_assets/base_model.3dm`, then creates and validates the architectural model.
 2. Phase 07 transfers audited geometry and metadata to Blender.
 3. `blender_import_handoff` imports, saves, frames, and foregrounds the exact managed Blender
-   instance; Blender MCP then assembles materials, cameras, lighting, and renders.
+   instance. For the standard hero still, `blender_render_archviz` owns the complete known-good
+   camera-target, lighting, render, save, and presentation transaction; do not guess low-level
+   operation fields.
 4. `comfyui_health` and one idempotent `comfyui_stylize_image` transaction perform and retrieve the
    geometry-locked architectural visualization. A Blender render alone is not a ComfyUI result.
 5. Each phase emits the receipt required by the active prompt.
