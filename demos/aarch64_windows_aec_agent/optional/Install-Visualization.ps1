@@ -121,7 +121,7 @@ if ($EnableComfyUI) {
     Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
   }
   if ($isArm64) {
-    $initializerRevision = '6'
+    $initializerRevision = '7'
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
