@@ -81,6 +81,13 @@ Confirm and document:
 
 ### Step B — Blender renders (Blender window)
 
+For the required demo hero still, call `blender_render_archviz` with a new absolute PNG path, the
+active working `.blend`, and one stable idempotency key. Do not assemble or guess camera/light/render
+operation payloads. The tool creates a camera aimed at an explicit target, adds the standard sun and
+fill, applies render settings, writes the PNG, saves the `.blend`, and presents the connected Blender
+window as one verified transaction. The animation and auxiliary-pass steps below are optional
+extended-production work and must not block the standard demo delivery.
+
 **B1. Beauty PNG sequence:**
 - Engine: Cycles GPU, 384 samples, OPTIX denoiser, 1920×1080.
 - Output: `v_YYYYMMDD_HHMM/png/frame_####.png` (PNG, RGB, 8-bit).

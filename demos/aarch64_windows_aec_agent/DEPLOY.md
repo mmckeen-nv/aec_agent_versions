@@ -125,8 +125,9 @@ an architectural hero PNG, send that render through the installed Flux 2 Klein C
 and return the verified final PNG path. Execute the whole workflow without manual file handling.
 ```
 
-Success requires `rhino_export_scene`, `blender_import_handoff`, a saved visible `.blend`, a Blender
-PNG, `comfyui_health`, and a completed `comfyui_stylize_image` receipt containing the final path,
+Success requires `rhino_export_scene`, `blender_import_handoff`, a saved visible `.blend`, one
+`blender_render_archviz` receipt with a non-empty Blender PNG, `comfyui_health`, and a completed
+`comfyui_stylize_image` receipt containing the final path,
 byte count, and SHA-256. Two Blender processes or a bridge PID/marker mismatch are a hard failure;
 the launcher must never silently target a different window.
 
