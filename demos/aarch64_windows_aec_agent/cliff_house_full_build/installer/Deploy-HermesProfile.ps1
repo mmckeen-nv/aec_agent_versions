@@ -48,7 +48,7 @@ $config = $config.Replace('__DML_STORE__', $dmlStore.Replace('\', '/'))
 if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House Hermes profile')) {
   New-Item -ItemType Directory -Force -Path $profileRoot | Out-Null
   if (Test-Path -LiteralPath $configPath) {
-    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $stamp = Get-Date -Format 'yyyyMMdd_HHmmssfff'
     Copy-Item -LiteralPath $configPath -Destination "$configPath.$stamp.bak"
   }
   Write-Utf8NoBom -LiteralPath $configPath -Value $config

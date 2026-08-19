@@ -43,7 +43,7 @@ $config = $config.Replace('__DML_STORE__', $dmlStore.Replace('\', '/'))
 if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House quick-modification profile')) {
   New-Item -ItemType Directory -Force -Path $profileRoot | Out-Null
   if (Test-Path -LiteralPath $configPath) {
-    Copy-Item -LiteralPath $configPath -Destination "$configPath.$(Get-Date -Format 'yyyyMMdd_HHmmss').bak"
+    Copy-Item -LiteralPath $configPath -Destination "$configPath.$(Get-Date -Format 'yyyyMMdd_HHmmssfff').bak"
   }
   Write-Utf8NoBom -LiteralPath $configPath -Value $config
   Copy-Item -LiteralPath (Join-Path $packageRoot 'AGENTS.md') -Destination (Join-Path $profileRoot 'AGENTS.md') -Force

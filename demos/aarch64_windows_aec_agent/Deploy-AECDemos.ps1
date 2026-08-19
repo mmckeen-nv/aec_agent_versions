@@ -92,8 +92,11 @@ if (-not $RhinoPort) {
 $deployArguments = @{
   RhinoPort = $RhinoPort
   ContextLength = $ContextLength
-  Force = $Force
+  # These two names are owned exclusively by this package. A deployment rerun
+  # refreshes them and their installers preserve the previous config as a backup.
+  Force = $true
 }
+Write-Host 'HERMES_PROFILE_REFRESH managed=true backups=true'
 & (Join-Path $fullRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-full-build-windows'
 & (Join-Path $quickRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-modifications-windows'
 & (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -EnableBlender:$useBlender -Force:$Force
