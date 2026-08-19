@@ -32,7 +32,15 @@ if (-not (Test-Path $rhino)) { throw 'Rhino 8 is not installed.' }
 if ($state.blender_enabled) {
   $blender = Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
   if (-not $blender) { throw 'Blender was enabled during deployment but is no longer installed.' }
-  if (-not (Get-Process blender -ErrorAction SilentlyContinue)) { Start-Process -FilePath $blender.FullName }
+  $blenderMarkerPath = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\active-instance.json'
+  $existingBlenderListener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (-not $existingBlenderListener -and -not (Get-Process blender -ErrorAction SilentlyContinue)) {
+    Remove-Item -LiteralPath $blenderMarkerPath -Force -ErrorAction SilentlyContinue
+    $env:DISABLE_TELEMETRY = 'true'
+    Start-Process -FilePath $blender.FullName
+  } elseif (-not $existingBlenderListener) {
+    throw 'Blender is already open without the managed MCP listener. Save that work, close every Blender window, and launch the demo again; the demo will start one managed instance.'
+  }
   # Blender 5.x can spend several minutes on first-run extension discovery and
   # shader/cache initialization before its startup timer runs.
   $blenderDeadline = (Get-Date).AddMinutes(4)
@@ -41,7 +49,17 @@ if ($state.blender_enabled) {
     $blenderReady = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue
   } while (-not $blenderReady -and (Get-Date) -lt $blenderDeadline)
   if (-not $blenderReady) { throw 'Blender opened, but the managed BlenderMCP server did not start on port 9876 within four minutes. In Blender, enable Interface: Blender MCP and click Start MCP Server.' }
-  Write-LaunchLog "BLENDER_READY port=$($state.blender_port) owner=$($blenderReady.OwningProcess)"
+  $markerDeadline = (Get-Date).AddSeconds(15)
+  do {
+    Start-Sleep -Milliseconds 500
+    try { $blenderMarker = Get-Content -Raw -LiteralPath $blenderMarkerPath -ErrorAction Stop | ConvertFrom-Json } catch { $blenderMarker = $null }
+  } while ((-not $blenderMarker -or $blenderMarker.process_id -ne $blenderReady.OwningProcess) -and (Get-Date) -lt $markerDeadline)
+  if (-not $blenderMarker -or $blenderMarker.process_id -ne $blenderReady.OwningProcess) {
+    throw "Blender MCP ownership is ambiguous. Listener owner is PID $($blenderReady.OwningProcess), but the managed instance marker does not match. Save Blender work, close all Blender windows, and relaunch the demo."
+  }
+  $blenderProcess = Get-Process -Id $blenderMarker.process_id -ErrorAction SilentlyContinue
+  if (-not $blenderProcess -or $blenderProcess.ProcessName -ne 'blender') { throw 'The managed Blender MCP owner is no longer running.' }
+  Write-LaunchLog "BLENDER_READY port=$($state.blender_port) owner=$($blenderReady.OwningProcess) marker=$blenderMarkerPath"
 }
 
 if ($state.comfyui_enabled) {

@@ -10,7 +10,7 @@ Required for both demos:
 - Windows 11 on ARM64.
 - Rhino 8, activated and able to open a `.3dm` document.
 - Hermes Desktop installed and opened at least once.
-- Python 3.11 or newer and Git available on `PATH`.
+- Git available on `PATH`; Python is supplied by Hermes or installed through its bundled `uv`.
 - Internet access for first installation and inference.
 - An NVIDIA inference API key with access to `switchyard/openai/gpt-5.6-sol`.
 
@@ -116,6 +116,19 @@ does not fail deployment. During a demo, the listener is valid only when port `1
 
 Success means Hermes uses `rhino_scene_query`, `rhino_apply_operations`, and
 `rhino_verify_transaction`. The protected golden master must remain unchanged.
+
+If Blender and ComfyUI were selected, run this complete visualization check in the same task:
+
+```text
+Load the active Rhino scene into Blender, save and visibly frame the Blender working scene, render
+an architectural hero PNG, send that render through the installed Flux 2 Klein ComfyUI workflow,
+and return the verified final PNG path. Execute the whole workflow without manual file handling.
+```
+
+Success requires `rhino_export_scene`, `blender_import_handoff`, a saved visible `.blend`, a Blender
+PNG, `comfyui_health`, and a completed `comfyui_stylize_image` receipt containing the final path,
+byte count, and SHA-256. Two Blender processes or a bridge PID/marker mismatch are a hard failure;
+the launcher must never silently target a different window.
 
 ## Second test: full build
 

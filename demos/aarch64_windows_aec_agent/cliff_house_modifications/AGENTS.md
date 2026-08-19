@@ -44,10 +44,20 @@ For a Rhino-to-Blender request, do not ask the operator to export and do not pas
 Blender. After the Rhino verification and save, call `rhino_export_scene` once with a new absolute
 `.glb` path inside the active timestamped `work/` directory and `expected_units=\"Meters\"`.
 Require a completed receipt with a non-zero byte count. Pass that path to
-`blender_validate_handoff`, then use one `blender_apply_operations` `import_scene` operation with
-`source_host=\"rhino\"` and `unit_scale=1.0`. GLB is required because Rhino's dedicated glTF
+`blender_validate_handoff`, then call `blender_import_handoff` with a new absolute working `.blend`
+path in the same timestamped run, `unit_scale=1.0`, and one stable idempotency key. That single
+transaction imports, saves, frames, and foregrounds the exact MCP-connected Blender instance; do
+not substitute a bare `import_scene` operation. GLB is required because Rhino's dedicated glTF
 writer is deterministic; do not fall back to the interactive FBX exporter. Re-query Blender before materials, camera, rendering,
 or ComfyUI submission. Never retry an uncertain import with a new idempotency key.
+
+For Blender-to-ComfyUI, render a new PNG inside the active run, verify that the Blender receipt is
+completed and the file is non-empty, then call `comfyui_health` and exactly one
+`comfyui_stylize_image` transaction. Supply a new absolute PNG output path, an architecture prompt
+that explicitly preserves geometry and camera, and one stable idempotency key. Require a completed
+receipt with `bytes`, `sha256`, and `output_path`; return that exact path. Never claim ComfyUI ran
+from a Blender render alone, never invent an output path, and never route ComfyUI through
+`blender_apply_operations`.
 
 Web search is available for building, zoning, accessibility, fire, safety, product, and other
 research required by the demo. Prefer primary and governing sources when accuracy matters, cite
