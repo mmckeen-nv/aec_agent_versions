@@ -206,13 +206,13 @@ if ($EnableComfyUI) {
     $setupScript = ConvertTo-WslMountedPath $setupStaged
     $linuxModels = ConvertTo-WslMountedPath $modelsRoot
     Write-Host "WSL_PATHS_READY setup=$setupScript models=$linuxModels"
-    Write-Host "COMFY_WSL_BOOTSTRAP revision=3 line_endings=lf mode=direct"
+    Write-Host "COMFY_WSL_BOOTSTRAP revision=4 line_endings=lf mode=direct-logged"
     & $wsl.Source -d $wslDistro -u root -- bash $setupScript $linuxUser $linuxModels
     if ($LASTEXITCODE) { throw 'Native ARM64 ComfyUI installation in WSL2 failed.' }
     # Keep the WSL client attached to ComfyUI. This works without systemd and
     # prevents WSL from idling out while the demo is running.
     $linuxComfyRoot = "/home/$linuxUser/.local/share/hermes-aec/comfyui"
-    $launcherText = "@echo off`r`nwsl.exe -d `"$wslDistro`" -u `"$linuxUser`" -- bash -lc `"cd '$linuxComfyRoot' && exec venv/bin/python ComfyUI/main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch`"`r`nif errorlevel 1 pause`r`n"
+    $launcherText = "@echo off`r`nwsl.exe -d `"$wslDistro`" -u `"$linuxUser`" -- `"$linuxComfyRoot/start-comfyui.sh`"`r`n"
     $backend = 'wsl2-arm64-cu130'
   } else {
     $archive = Join-Path $comfyRoot "downloads\ComfyUI_windows_portable_nvidia-$comfyVersion.7z"
@@ -235,15 +235,31 @@ if ($EnableComfyUI) {
     $backend = 'windows-portable'
   }
   Set-Content -LiteralPath $launcher -Value $launcherText -Encoding ascii
+  $comfyProcess = $null
   if (-not (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue)) {
-    Start-Process -FilePath $launcher -WindowStyle Minimized
+    $comfyProcess = Start-Process -FilePath $launcher -WindowStyle Minimized -PassThru
   }
   $deadline = (Get-Date).AddMinutes(5)
   do {
     Start-Sleep -Seconds 3
     try { $stats = Invoke-RestMethod -UseBasicParsing -Uri 'http://127.0.0.1:8188/system_stats' -TimeoutSec 5 } catch { $stats = $null }
+    if ($comfyProcess -and $comfyProcess.HasExited) { break }
   } while (-not $stats -and (Get-Date) -lt $deadline)
-  if (-not $stats) { throw 'ComfyUI did not become ready on 127.0.0.1:8188 within five minutes.' }
+  if (-not $stats) {
+    if ($isArm64) {
+      $logLines = @(& $wsl.Source -d $wslDistro -u $linuxUser -- tail -n 120 "$linuxComfyRoot/comfyui.log" 2>$null)
+      if ($logLines.Count) {
+        Write-Host 'COMFYUI_STARTUP_LOG_BEGIN' -ForegroundColor Yellow
+        $logLines | ForEach-Object { Write-Host $_ }
+        Write-Host 'COMFYUI_STARTUP_LOG_END' -ForegroundColor Yellow
+      }
+      $insideWsl = @(& $wsl.Source -d $wslDistro -u $linuxUser -- curl -fsS --max-time 5 http://127.0.0.1:8188/system_stats 2>$null)
+      if ($LASTEXITCODE -eq 0 -and $insideWsl.Count) {
+        throw 'ComfyUI is running inside WSL2, but Windows cannot reach it on 127.0.0.1:8188. Check WSL localhost forwarding and Windows firewall policy.'
+      }
+    }
+    throw 'ComfyUI failed to start. Review COMFYUI_STARTUP_LOG above; the log is also stored at ~/.local/share/hermes-aec/comfyui/comfyui.log in WSL2.'
+  }
   $statsText = $stats | ConvertTo-Json -Depth 10
   if ($statsText -notmatch '(?i)cuda' -or $statsText -notmatch '(?i)nvidia') { throw 'ComfyUI is online but did not report an NVIDIA CUDA device.' }
   if ($isArm64 -and ($stats.system.os -ne 'linux' -or $stats.system.pytorch_version -notmatch '\+cu130')) { throw 'Windows ARM64 must use native WSL2 ComfyUI with the CUDA 13 PyTorch build.' }

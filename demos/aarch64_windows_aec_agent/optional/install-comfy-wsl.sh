@@ -9,7 +9,7 @@ install_root="$target_home/.local/share/hermes-aec/comfyui"
 
 test -n "$target_home"
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y git python3.12-venv python3.12-dev build-essential
+DEBIAN_FRONTEND=noninteractive apt-get install -y curl git python3.12-venv python3.12-dev build-essential
 
 if [ ! -d "$install_root/ComfyUI/.git" ]; then
   install -d -o "$target_user" -g "$target_user" "$install_root"
@@ -36,5 +36,15 @@ for mapping in \
 done
 chown -R "$target_user:$target_user" "$install_root"
 
+cat >"$install_root/start-comfyui.sh" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$install_root"
+exec > >(tee "$install_root/comfyui.log") 2>&1
+echo "COMFY_PROCESS_START user=\$(id -un) root=\$(pwd)"
+exec venv/bin/python ComfyUI/main.py --listen 0.0.0.0 --port 8188 --disable-auto-launch
+EOF
+chmod 0755 "$install_root/start-comfyui.sh"
+chown "$target_user:$target_user" "$install_root/start-comfyui.sh"
 runuser -u "$target_user" -- "$install_root/venv/bin/python" -c 'import torch; assert torch.cuda.is_available(); print("WSL_CUDA_PASS", torch.__version__, torch.version.cuda, torch.cuda.get_device_name(0))'
 echo "COMFY_WSL_INSTALL_READY root=$install_root startup=attached-launcher"
