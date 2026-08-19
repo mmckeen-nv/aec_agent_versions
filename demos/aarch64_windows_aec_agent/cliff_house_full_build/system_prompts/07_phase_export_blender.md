@@ -201,21 +201,18 @@ throw new Exception("Snapshot saved=" + ok + " path=" + snapPath);
 
 Confirm the snapshot file exists and is non-zero size before continuing.
 
-### Step 5 — Import into Blender via import_with_metadata.py
+### Step 5 — Typed FBX export and Blender import
 
-Switch to Blender. Run `skills/import_with_metadata.py` via BlenderMCP,
-pointing it at the snapshot path from Step 4.
+Call `rhino_export_scene` once with a new absolute `.fbx` path under the active phase work
+directory and `expected_units: Meters`. Refuse overwrite and require a completed receipt with a
+non-zero byte count. Call `blender_validate_handoff` with that export path plus the audited source
+IDs and layers. Then submit one `blender_apply_operations` batch whose first operation is
+`import_scene` with `path` set to the receipt path, `source_host: rhino`, `unit_scale: 1.0`, and a
+semantic collection name. Do not pass `.3dm` to Blender and do not ask the operator to export.
 
-This script:
-- Uses the `rhino3dm` Python library to read the `.3dm` directly (no FBX/OBJ)
-- Preserves the full Rhino layer hierarchy as Blender collections
-- Reads the `material` User Text from each object
-- Sets `obj["material"]` (custom property) on every imported Blender mesh
-- Sets `obj["rhino_layer"]` custom property for segmentation pass use
-- Organises the scene hierarchy — each Rhino layer becomes a collection
-
-**Do NOT attempt to import via File → Import FBX/OBJ.**
-The `rhino3dm` approach is the only method that preserves metadata.
+After import, independently query Blender and compare imported bounds and object counts against
+the Rhino audit. Apply material intent through typed Blender material operations after the import
+has been verified.
 
 After import, confirm in the Blender outliner:
 - All expected objects are present

@@ -37,6 +37,14 @@ For every modification request, use exactly this progression:
    a task-specific spatial or naming assertion is not already present in the receipt.
 5. One final `rhino_viewport_capture`, then `save_doc`, report the evidence, and stop.
 
+For a Rhino-to-Blender request, do not ask the operator to export and do not pass `.3dm` to
+Blender. After the Rhino verification and save, call `rhino_export_scene` once with a new absolute
+`.fbx` path inside the active timestamped `work/` directory and `expected_units=\"Meters\"`.
+Require a completed receipt with a non-zero byte count. Pass that path to
+`blender_validate_handoff`, then use one `blender_apply_operations` `import_scene` operation with
+`source_host=\"rhino\"` and `unit_scale=1.0`. Re-query Blender before materials, camera, rendering,
+or ComfyUI submission. Never retry an uncertain import with a new idempotency key.
+
 Web search is available for building, zoning, accessibility, fire, safety, product, and other
 research required by the demo. Prefer primary and governing sources when accuracy matters, cite
 the sources used, and clearly distinguish binding requirements from guidance.
