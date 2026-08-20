@@ -89,25 +89,36 @@ if ($EnableBlender) {
   $blender = Find-Blender
   if (-not $blender) { throw 'Blender was selected but is not installed. Install Blender from https://www.blender.org/download/ and rerun deployment.' }
   if (-not (Test-Path -LiteralPath $hermesUv)) { throw 'Hermes uvx is missing; repair Hermes Desktop.' }
+  $versionLine = (& $blender.FullName --version | Select-Object -First 1)
+  if ($versionLine -notmatch 'Blender\s+(\d+\.\d+)') { throw "Could not determine Blender version from $($blender.FullName)." }
+  $blenderVersion = $Matches[1]
+  # A fresh Blender installation does not create its per-user script tree until
+  # first use. The BlenderMCP installer otherwise fails before our startup hook
+  # can be deployed, so create and explicitly select the deterministic target.
+  $blenderScriptsRoot = Join-Path $env:APPDATA "Blender Foundation\Blender\$blenderVersion\scripts"
+  $addonsRoot = Join-Path $blenderScriptsRoot 'addons'
+  New-Item -ItemType Directory -Force -Path $addonsRoot | Out-Null
   $previousPythonUtf8 = $env:PYTHONUTF8
+  $previousAddonsDir = $env:BLENDERMCP_ADDONS_DIR
   $env:PYTHONUTF8 = '1'
+  $env:BLENDERMCP_ADDONS_DIR = $addonsRoot
   try {
-    & $hermesUv --from "blender-mcp==$blenderMcpVersion" blender-mcp install-addon
+    & $hermesUv --from "blender-mcp==$blenderMcpVersion" blender-mcp install-addon --addons-dir $addonsRoot
   } finally {
     if ($null -eq $previousPythonUtf8) { Remove-Item Env:PYTHONUTF8 -ErrorAction SilentlyContinue }
     else { $env:PYTHONUTF8 = $previousPythonUtf8 }
+    if ($null -eq $previousAddonsDir) { Remove-Item Env:BLENDERMCP_ADDONS_DIR -ErrorAction SilentlyContinue }
+    else { $env:BLENDERMCP_ADDONS_DIR = $previousAddonsDir }
   }
   if ($LASTEXITCODE) { throw 'Pinned BlenderMCP add-on installation failed.' }
-  $versionLine = (& $blender.FullName --version | Select-Object -First 1)
-  if ($versionLine -notmatch 'Blender\s+(\d+\.\d+)') { throw "Could not determine Blender version from $($blender.FullName)." }
-  $startupRoot = Join-Path $env:APPDATA "Blender Foundation\Blender\$($Matches[1])\scripts\startup"
+  $startupRoot = Join-Path $blenderScriptsRoot 'startup'
   New-Item -ItemType Directory -Force -Path $startupRoot | Out-Null
   Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'hermes_aec_blender_startup.py') -Destination (Join-Path $startupRoot 'hermes_aec_blender_startup.py') -Force
   $wrapperRoot = Join-Path $integrationRoot 'blender-mcp'
   New-Item -ItemType Directory -Force -Path $wrapperRoot | Out-Null
   $wrapper = "@echo off`r`nset DISABLE_TELEMETRY=true`r`nset PYTHONUTF8=1`r`n`"$hermesUv`" --from blender-mcp==$blenderMcpVersion blender-mcp %*`r`n"
   Set-Content -LiteralPath (Join-Path $wrapperRoot 'blender-mcp.cmd') -Value $wrapper -Encoding ascii
-  Write-Host "BLENDER_INTEGRATION_READY version=$($Matches[1]) mcp=$blenderMcpVersion port=9876"
+  Write-Host "BLENDER_INTEGRATION_READY version=$blenderVersion mcp=$blenderMcpVersion addons=$addonsRoot port=9876"
 }
 
 if ($EnableComfyUI) {
