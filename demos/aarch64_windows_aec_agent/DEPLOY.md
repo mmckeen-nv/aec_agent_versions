@@ -91,6 +91,12 @@ Verify the inference provider separately before opening a demo:
 .\Test-InferenceEndpoint.cmd
 ```
 
+## Change or erase the NVIDIA API key
+
+Close Hermes, then double-click `Change_API_Key.cmd`. Choose **S** to securely enter a replacement
+key or **E** to erase the saved key from both Cliff House profiles. Key input is hidden and the key
+is never printed. Restart Hermes after the change.
+
 ## Verify
 
 Run:
