@@ -54,7 +54,9 @@ checks Rhino, Hermes/OOBE, its managed Python bootstrap, and Git before changing
 On Windows ARM64, ComfyUI is installed natively inside WSL2 Ubuntu 24.04 with the CUDA 13
 PyTorch build. The deployment script enables the WSL2 Windows features, updates WSL, installs
 Ubuntu 24.04 when needed, and initializes the deterministic demo account `nvidia` / `nvidia`.
-It will stop with a clear instruction if Windows requires a restart. This deliberately weak
+When initial WSL2 setup requires a reboot, deployment stops with
+`RESTART WINDOWS AND RUN Deploy-AECDemos.cmd AGAIN.` Do exactly that; the second run resumes
+idempotently. This deliberately weak
 credential is suitable only for the isolated demo appliance and must not be reused elsewhere.
 The installer copies the model weights into WSL's Linux filesystem and uses an attached WSL
 launcher on port 8188; it does not require systemd or run the incompatible x64 Windows portable build under
