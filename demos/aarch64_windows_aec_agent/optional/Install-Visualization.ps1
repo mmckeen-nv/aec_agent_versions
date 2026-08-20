@@ -132,7 +132,7 @@ if ($EnableComfyUI) {
     Write-Host "COMFY_MODEL_CHECK present=$($present.ToString().ToLowerInvariant()) path=$candidate minimum_bytes=$($model.Minimum)"
   }
   if ($isArm64) {
-    $initializerRevision = '9'
+    $initializerRevision = '10'
     $statusPath = Join-Path $comfyRoot 'wsl-initialization.json'
     Remove-Item -LiteralPath $statusPath -Force -ErrorAction SilentlyContinue
     $initializer = Join-Path $PSScriptRoot 'Initialize-WSL2.ps1'
@@ -176,6 +176,7 @@ if ($EnableComfyUI) {
     $wslStatus = Get-Content -Raw -LiteralPath $statusPath | ConvertFrom-Json
     if ($wslStatus.initializer_revision -ne $initializerRevision) { throw "Stale WSL initializer result detected. Expected revision $initializerRevision but received '$($wslStatus.initializer_revision)'." }
     if ($wslStatus.status -eq 'restart_required') { throw "AEC_RESTART_REQUIRED: $($wslStatus.message)" }
+    if ($wslStatus.status -eq 'rerun_required') { throw "AEC_RERUN_REQUIRED: $($wslStatus.message)" }
     if ($wslStatus.status -ne 'ready') { throw "WSL2 initialization failed: $($wslStatus.message)" }
     Write-Host "WSL2_INITIALIZATION_PASS distribution=$($wslStatus.distribution) user=nvidia"
     Write-Host 'DEMO_CREDENTIAL_NOTICE WSL user=nvidia password=nvidia. This weak credential is for the isolated demo appliance only.' -ForegroundColor Yellow

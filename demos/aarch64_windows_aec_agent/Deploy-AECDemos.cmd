@@ -12,6 +12,14 @@ if "%AEC_EXIT_CODE%"=="3010" (
   exit /b 3010
 )
 
+if "%AEC_EXIT_CODE%"=="10" (
+  echo.
+  echo UBUNTU 24.04 IS INSTALLED AND CONFIGURED.
+  echo RUN Deploy-AECDemos.cmd AGAIN.
+  pause
+  exit /b 10
+)
+
 if not "%AEC_EXIT_CODE%"=="0" (
   echo.
   echo AEC demo deployment failed with exit code %AEC_EXIT_CODE%.
