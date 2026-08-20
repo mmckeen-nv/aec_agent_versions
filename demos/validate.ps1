@@ -75,7 +75,7 @@ foreach ($optionalContract in @('Are you going to use Blender?', 'Are you going 
   if ($windowsDeploy -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows optional deployment contract is missing: $optionalContract") }
 }
 $visualizationInstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Install-Visualization.ps1')
-foreach ($optionalContract in @("blenderMcpVersion = '1.8.3'", 'v0.33.1', 'flux-2-klein-base-4b-fp8.safetensors', 'qwen_3_4b.safetensors', 'flux2-vae.safetensors', 'COMFYUI_INTEGRATION_READY')) {
+foreach ($optionalContract in @("blenderMcpVersion = '1.8.3'", 'BLENDERMCP_ADDONS_DIR', "Join-Path `$blenderScriptsRoot 'addons'", 'install-addon --addons-dir $addonsRoot', 'v0.33.1', 'flux-2-klein-base-4b-fp8.safetensors', 'qwen_3_4b.safetensors', 'flux2-vae.safetensors', 'COMFYUI_INTEGRATION_READY')) {
   if ($visualizationInstaller -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows visualization installer is missing: $optionalContract") }
 }
 $comfyController = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Start-AEC-ComfyUI.ps1')
