@@ -26,6 +26,7 @@ foreach ($required in @(
   'aarch64_windows_aec_agent\memory\dml.yaml',
   'aarch64_windows_aec_agent\memory\seed_dml.py',
   'aarch64_windows_aec_agent\optional\Install-Visualization.ps1',
+  'aarch64_windows_aec_agent\optional\Start-AEC-ComfyUI.ps1',
   'aarch64_windows_aec_agent\optional\hermes_aec_blender_startup.py',
   'aarch64_ubuntu_aec_agent\DEPLOY.md',
   'aarch64_ubuntu_aec_agent\deploy-aec-demos.sh',
@@ -76,6 +77,10 @@ foreach ($optionalContract in @('Are you going to use Blender?', 'Are you going 
 $visualizationInstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Install-Visualization.ps1')
 foreach ($optionalContract in @("blenderMcpVersion = '1.8.3'", 'v0.33.1', 'flux-2-klein-base-4b-fp8.safetensors', 'qwen_3_4b.safetensors', 'flux2-vae.safetensors', 'COMFYUI_INTEGRATION_READY')) {
   if ($visualizationInstaller -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows visualization installer is missing: $optionalContract") }
+}
+$comfyController = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Start-AEC-ComfyUI.ps1')
+foreach ($requiredContract in @('comfyui-launch.json', 'comfyui-start.lock', 'active-instance.json', 'COMFYUI_AUTOSTART_READY', 'COMFYUI_AUTOSTART_FAILED', 'WaitSeconds = 420')) {
+  if ($comfyController -notmatch [regex]::Escape($requiredContract)) { $failures.Add("Managed ComfyUI controller is missing: $requiredContract") }
 }
 $windowsLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.cmd')
 if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or

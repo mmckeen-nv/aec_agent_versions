@@ -184,6 +184,8 @@ if ($EnableComfyUI) {
     Receive-LargeFile -Uri $model.Url -Destination $destination -MinimumBytes $model.Minimum
   }
   $launcher = Join-Path $comfyRoot 'Start-AEC-ComfyUI.cmd'
+  $controller = Join-Path $comfyRoot 'Start-AEC-ComfyUI.ps1'
+  $launchStatePath = Join-Path $comfyRoot 'comfyui-launch.json'
   if ($isArm64) {
     $wsl = Get-Command wsl.exe -ErrorAction SilentlyContinue
     if (-not $wsl) { throw 'ComfyUI on Windows ARM64 requires WSL2. Run wsl --install, restart Windows, and rerun deployment.' }
@@ -212,8 +214,11 @@ if ($EnableComfyUI) {
     # Keep the WSL client attached to ComfyUI. This works without systemd and
     # prevents WSL from idling out while the demo is running.
     $linuxComfyRoot = "/home/$linuxUser/.local/share/hermes-aec/comfyui"
-    $launcherText = "@echo off`r`nwsl.exe -d $wslDistro -u $linuxUser -- $linuxComfyRoot/start-comfyui.sh`r`n"
     $backend = 'wsl2-arm64-cu130'
+    $launchState = @{
+      schema_version = 1; backend = $backend; port = 8188; distribution = $wslDistro
+      user = $linuxUser; linux_root = $linuxComfyRoot
+    }
   } else {
     $archive = Join-Path $comfyRoot "downloads\ComfyUI_windows_portable_nvidia-$comfyVersion.7z"
     Receive-LargeFile -Uri $comfyArchiveUrl -Destination $archive -MinimumBytes 1000000000
@@ -231,46 +236,20 @@ if ($EnableComfyUI) {
     }
     $embeddedPython = Join-Path $portableRoot 'ComfyUI_windows_portable\python_embeded\python.exe'
     if (-not (Test-Path -LiteralPath $embeddedPython)) { throw 'ComfyUI embedded Python is missing after extraction.' }
-    $launcherText = "@echo off`r`n`"$embeddedPython`" -s `"$mainScript`" --listen 127.0.0.1 --port 8188 --windows-standalone-build --disable-auto-launch`r`n"
     $backend = 'windows-portable'
+    $launchState = @{
+      schema_version = 1; backend = $backend; port = 8188; executable = $embeddedPython
+      arguments = @('-s', $mainScript, '--listen', '127.0.0.1', '--port', '8188', '--windows-standalone-build', '--disable-auto-launch')
+    }
   }
+  Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Start-AEC-ComfyUI.ps1') -Destination $controller -Force
+  $launchStateText = $launchState | ConvertTo-Json -Depth 8
+  [IO.File]::WriteAllText($launchStatePath, $launchStateText + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
+  $launcherText = "@echo off`r`npowershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File `"%~dp0Start-AEC-ComfyUI.ps1`" %*`r`n"
   Set-Content -LiteralPath $launcher -Value $launcherText -Encoding ascii
-  $comfyProcess = $null
-  $startupStdout = if ($isArm64) { Join-Path $comfyRoot 'comfyui-startup.stdout.log' } else { $null }
-  $startupStderr = if ($isArm64) { Join-Path $comfyRoot 'comfyui-startup.stderr.log' } else { $null }
-  if (-not (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue)) {
-    if ($isArm64) {
-      Remove-Item -LiteralPath $startupStdout, $startupStderr -Force -ErrorAction SilentlyContinue
-      $comfyProcess = Start-Process -FilePath $wsl.Source -ArgumentList @('-d', $wslDistro, '-u', $linuxUser, '--', "$linuxComfyRoot/start-comfyui.sh") -WindowStyle Hidden -RedirectStandardOutput $startupStdout -RedirectStandardError $startupStderr -PassThru
-      Write-Host "COMFYUI_PROCESS_LAUNCHED pid=$($comfyProcess.Id) distribution=$wslDistro user=$linuxUser"
-    } else {
-      $comfyProcess = Start-Process -FilePath $launcher -WindowStyle Minimized -PassThru
-    }
-  }
-  $deadline = (Get-Date).AddMinutes(5)
-  do {
-    Start-Sleep -Seconds 3
-    try { $stats = Invoke-RestMethod -UseBasicParsing -Uri 'http://127.0.0.1:8188/system_stats' -TimeoutSec 5 } catch { $stats = $null }
-    if ($comfyProcess -and $comfyProcess.HasExited) { break }
-  } while (-not $stats -and (Get-Date) -lt $deadline)
-  if (-not $stats) {
-    if ($isArm64) {
-      $logLines = @()
-      foreach ($logPath in @($startupStdout, $startupStderr)) {
-        if (Test-Path -LiteralPath $logPath) { $logLines += @(Get-Content -LiteralPath $logPath -Tail 120 -ErrorAction SilentlyContinue) }
-      }
-      if ($logLines.Count) {
-        Write-Host 'COMFYUI_STARTUP_LOG_BEGIN' -ForegroundColor Yellow
-        $logLines | ForEach-Object { Write-Host $_ }
-        Write-Host 'COMFYUI_STARTUP_LOG_END' -ForegroundColor Yellow
-      }
-      $insideWsl = @(& $wsl.Source -d $wslDistro -u $linuxUser -- bash -c 'curl -fsS --max-time 5 http://127.0.0.1:8188/system_stats 2>/dev/null || true')
-      if ($insideWsl.Count) {
-        throw 'ComfyUI is running inside WSL2, but Windows cannot reach it on 127.0.0.1:8188. Check WSL localhost forwarding and Windows firewall policy.'
-      }
-    }
-    throw 'ComfyUI failed to start. Review COMFYUI_STARTUP_LOG above; the log is also stored at ~/.local/share/hermes-aec/comfyui/comfyui.log in WSL2.'
-  }
+  & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File $controller -WaitSeconds 420
+  if ($LASTEXITCODE) { throw "Managed ComfyUI startup controller failed with exit code $LASTEXITCODE." }
+  $stats = Invoke-RestMethod -UseBasicParsing -Uri 'http://127.0.0.1:8188/system_stats' -TimeoutSec 10
   $statsText = $stats | ConvertTo-Json -Depth 10
   if ($statsText -notmatch '(?i)cuda' -or $statsText -notmatch '(?i)nvidia') { throw 'ComfyUI is online but did not report an NVIDIA CUDA device.' }
   if ($isArm64 -and ($stats.system.os -ne 'linux' -or $stats.system.pytorch_version -notmatch '\+cu130')) { throw 'Windows ARM64 must use native WSL2 ComfyUI with the CUDA 13 PyTorch build.' }

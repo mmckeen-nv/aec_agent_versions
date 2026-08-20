@@ -63,17 +63,29 @@ if ($state.blender_enabled) {
 }
 
 if ($state.comfyui_enabled) {
-  $comfyLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.cmd'
-  if (-not (Test-Path -LiteralPath $comfyLauncher)) { throw 'ComfyUI was enabled, but its managed launcher is missing.' }
+  $comfyRoot = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec'
+  $comfyController = Join-Path $comfyRoot 'Start-AEC-ComfyUI.ps1'
+  $comfyControllerLog = Join-Path $comfyRoot 'comfyui-controller.log'
+  if (-not (Test-Path -LiteralPath $comfyController)) { throw 'ComfyUI was enabled, but its managed startup controller is missing. Rerun deployment with -Force.' }
+  $comfyStarter = $null
   if (-not (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort 8188 -State Listen -ErrorAction SilentlyContinue)) {
-    Start-Process -FilePath $comfyLauncher -WindowStyle Minimized
+    $comfyArguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$comfyController`" -WaitSeconds 420"
+    $comfyStarter = Start-Process -FilePath powershell.exe -ArgumentList $comfyArguments -WindowStyle Hidden -PassThru
+    Write-LaunchLog "COMFYUI_AUTOSTART_REQUESTED controller_pid=$($comfyStarter.Id)"
   }
-  $comfyDeadline = (Get-Date).AddMinutes(3)
+  $comfyDeadline = (Get-Date).AddMinutes(7.5)
   do {
     Start-Sleep -Seconds 3
     try { $comfyReady = Invoke-RestMethod -UseBasicParsing -Uri 'http://127.0.0.1:8188/system_stats' -TimeoutSec 5 } catch { $comfyReady = $null }
+    if ($comfyStarter -and $comfyStarter.HasExited -and -not $comfyReady) { break }
   } while (-not $comfyReady -and (Get-Date) -lt $comfyDeadline)
-  if (-not $comfyReady) { throw 'Managed ComfyUI did not become ready on port 8188.' }
+  if (-not $comfyReady) {
+    $detail = if (Test-Path -LiteralPath $comfyControllerLog) { (Get-Content -LiteralPath $comfyControllerLog -Tail 30 -ErrorAction SilentlyContinue) -join ' | ' } else { 'controller log was not created' }
+    throw "Managed ComfyUI did not become ready on port 8188. $detail"
+  }
+  $comfyHealthText = $comfyReady | ConvertTo-Json -Depth 10
+  if ($comfyHealthText -notmatch '(?i)cuda' -or $comfyHealthText -notmatch '(?i)nvidia') { throw 'Managed ComfyUI is online but did not report an NVIDIA CUDA device.' }
+  Write-LaunchLog "COMFYUI_READY port=8188"
 }
 
 function Test-RhinoMCPReady {
