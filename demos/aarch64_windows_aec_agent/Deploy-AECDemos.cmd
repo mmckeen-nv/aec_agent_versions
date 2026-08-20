@@ -5,6 +5,13 @@ rem This is the user-facing launcher. ExecutionPolicy Bypass applies only to thi
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Deploy-AECDemos.ps1" -NoPauseOnError %*
 set "AEC_EXIT_CODE=%ERRORLEVEL%"
 
+if "%AEC_EXIT_CODE%"=="3010" (
+  echo.
+  echo RESTART WINDOWS AND RUN Deploy-AECDemos.cmd AGAIN.
+  pause
+  exit /b 3010
+)
+
 if not "%AEC_EXIT_CODE%"=="0" (
   echo.
   echo AEC demo deployment failed with exit code %AEC_EXIT_CODE%.

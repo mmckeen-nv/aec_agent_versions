@@ -25,6 +25,14 @@ function Resolve-OptionalChoice([string]$Choice, [string]$Prompt) {
 # opt out with -NoPauseOnError while retaining the non-zero process exit code.
 trap {
   $failureMessage = $_.Exception.Message
+  if ($failureMessage -like 'AEC_RESTART_REQUIRED:*') {
+    $restartInstruction = $failureMessage.Substring('AEC_RESTART_REQUIRED:'.Length).Trim()
+    Write-Host ''
+    Write-Host 'AEC_DEMOS_RESTART_REQUIRED' -ForegroundColor Yellow
+    Write-Host $restartInstruction -ForegroundColor Yellow
+    Write-Host ''
+    exit 3010
+  }
   Write-Host ''
   Write-Host 'AEC_DEMOS_DEPLOYMENT_FAILED' -ForegroundColor Red
   Write-Host $failureMessage -ForegroundColor Red

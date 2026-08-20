@@ -25,7 +25,7 @@ try {
     }
   }
   if ($restartRequired) {
-    Save-Status 'restart_required' 'Windows enabled WSL2 prerequisites. Restart Windows, then rerun deployment.'
+    Save-Status 'restart_required' 'Windows enabled the WSL2 prerequisites. RESTART WINDOWS AND RUN Deploy-AECDemos.cmd AGAIN.'
     exit 0
   }
 
@@ -57,7 +57,7 @@ try {
     $distribution = 'Ubuntu-24.04'
     $release = ((& $wsl -d $distribution -u root -- cat /etc/os-release 2>$null) -join "`n")
     if ($release -notmatch '(?m)^VERSION_ID="?24\.04"?\s*$') {
-      Save-Status 'restart_required' 'Ubuntu 24.04 was installed. Restart Windows, then rerun deployment to initialize it.' $distribution
+      Save-Status 'restart_required' 'Ubuntu 24.04 was installed. RESTART WINDOWS AND RUN Deploy-AECDemos.cmd AGAIN.' $distribution
       exit 0
     }
   }

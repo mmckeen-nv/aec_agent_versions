@@ -175,7 +175,7 @@ if ($EnableComfyUI) {
     if (-not (Test-Path -LiteralPath $statusPath)) { throw 'WSL2 initialization did not produce a status result.' }
     $wslStatus = Get-Content -Raw -LiteralPath $statusPath | ConvertFrom-Json
     if ($wslStatus.initializer_revision -ne $initializerRevision) { throw "Stale WSL initializer result detected. Expected revision $initializerRevision but received '$($wslStatus.initializer_revision)'." }
-    if ($wslStatus.status -eq 'restart_required') { throw $wslStatus.message }
+    if ($wslStatus.status -eq 'restart_required') { throw "AEC_RESTART_REQUIRED: $($wslStatus.message)" }
     if ($wslStatus.status -ne 'ready') { throw "WSL2 initialization failed: $($wslStatus.message)" }
     Write-Host "WSL2_INITIALIZATION_PASS distribution=$($wslStatus.distribution) user=nvidia"
     Write-Host 'DEMO_CREDENTIAL_NOTICE WSL user=nvidia password=nvidia. This weak credential is for the isolated demo appliance only.' -ForegroundColor Yellow
