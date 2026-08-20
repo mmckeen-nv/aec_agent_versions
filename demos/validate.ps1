@@ -15,6 +15,8 @@ foreach ($required in @(
   'aarch64_windows_aec_agent\INFERENCE_ENDPOINT.md',
   'aarch64_windows_aec_agent\Deploy-AECDemos.cmd',
   'aarch64_windows_aec_agent\Deploy-AECDemos.ps1',
+  'aarch64_windows_aec_agent\Change_API_Key.cmd',
+  'aarch64_windows_aec_agent\Change_API_Key.ps1',
   'aarch64_windows_aec_agent\Uninstall-AECDemos.cmd',
   'aarch64_windows_aec_agent\Uninstall-AECDemos.ps1',
   'aarch64_windows_aec_agent\Test-AECDeployment.cmd',
@@ -96,6 +98,10 @@ if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or
     $windowsLauncher -notmatch 'exit /b 10' -or
     $windowsLauncher -notmatch '(?im)^\s*pause\s*$') {
   $failures.Add('Windows policy-safe launcher must invoke deployment and pause on failure')
+}
+$apiKeyChanger = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Change_API_Key.ps1')
+foreach ($requiredContract in @('NVIDIA_API_KEY=', "Read-Host 'New NVIDIA API key (input is hidden)' -AsSecureString", 'AEC_API_KEY_SET', 'AEC_API_KEY_ERASED', 'cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
+  if ($apiKeyChanger -notmatch [regex]::Escape($requiredContract)) { $failures.Add("API key changer is missing: $requiredContract") }
 }
 $windowsUninstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Uninstall-AECDemos.ps1')
 foreach ($requiredContract in @('Type UNINSTALL to continue', 'Also uninstall Rhino 8', 'Find-RhinoUninstaller', 'Assert-ChildPath', 'AEC_DEMOS_UNINSTALLED')) {
