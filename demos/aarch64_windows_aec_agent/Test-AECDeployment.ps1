@@ -72,7 +72,9 @@ if (Test-Path $statePath) {
   } else { Write-Host 'SKIP  Blender was not selected during deployment.' }
   if ($state.comfyui_enabled) {
     $comfyLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.cmd'
-    if (Test-Path $comfyLauncher) { Write-Host 'PASS  Opted-in ComfyUI launcher and FLUX bundle' } else { Write-Host 'FAIL  Opted-in ComfyUI launcher'; $failures.Add('ComfyUI launcher') }
+    $comfyController = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.ps1'
+    $comfyLaunchState = Join-Path $env:LOCALAPPDATA 'hermes\integrations\comfyui-aec\comfyui-launch.json'
+    if ((Test-Path $comfyLauncher) -and (Test-Path $comfyController) -and (Test-Path $comfyLaunchState)) { Write-Host 'PASS  Managed ComfyUI autostart controller and FLUX bundle' } else { Write-Host 'FAIL  Managed ComfyUI autostart controller'; $failures.Add('ComfyUI autostart controller') }
     foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
       $configPath = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\config.yaml"
       $configText = if (Test-Path -LiteralPath $configPath) { Get-Content -Raw -LiteralPath $configPath } else { '' }

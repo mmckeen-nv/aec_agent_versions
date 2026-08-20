@@ -59,6 +59,17 @@ credential is suitable only for the isolated demo appliance and must not be reus
 The installer copies the model weights into WSL's Linux filesystem and uses an attached WSL
 launcher on port 8188; it does not require systemd or run the incompatible x64 Windows portable build under
 emulation. On x64 Windows, the pinned NVIDIA portable build remains the supported backend.
+
+The desktop demo shortcuts start ComfyUI automatically when it is offline. Cold startup can take
+up to seven minutes while CUDA initializes. The managed controller serializes simultaneous starts,
+records the active process, verifies that ComfyUI reports an NVIDIA CUDA device, and preserves
+diagnostics in `%LOCALAPPDATA%\hermes\integrations\comfyui-aec\comfyui-controller.log`.
+To test or diagnose ComfyUI independently, run:
+
+```bat
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\hermes\integrations\comfyui-aec\Start-AEC-ComfyUI.ps1"
+```
+
 6. Wait for `AEC_DEMOS_DEPLOYED`; its final line records both selections.
 
 The installer is safe to rerun. It installs the runtime version pinned in
