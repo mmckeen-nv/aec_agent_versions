@@ -33,6 +33,14 @@ trap {
     Write-Host ''
     exit 3010
   }
+  if ($failureMessage -like 'AEC_RERUN_REQUIRED:*') {
+    $rerunInstruction = $failureMessage.Substring('AEC_RERUN_REQUIRED:'.Length).Trim()
+    Write-Host ''
+    Write-Host 'AEC_DEMOS_RERUN_REQUIRED' -ForegroundColor Yellow
+    Write-Host $rerunInstruction -ForegroundColor Yellow
+    Write-Host ''
+    exit 10
+  }
   Write-Host ''
   Write-Host 'AEC_DEMOS_DEPLOYMENT_FAILED' -ForegroundColor Red
   Write-Host $failureMessage -ForegroundColor Red

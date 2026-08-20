@@ -62,6 +62,10 @@ try {
     }
   }
 
+  $demoUserBefore = (((& $wsl -d $distribution -u root -- bash -lc 'id -u nvidia 2>/dev/null || true') -join '') -replace "`0", '').Trim()
+  $configBefore = (((& $wsl -d $distribution -u root -- bash -lc 'base64 -w0 /etc/wsl.conf 2>/dev/null || true') -join '') -replace "`0", '').Trim()
+  $ubuntuConfigurationChanged = $demoUserBefore -notmatch '^\d+$' -or $configBefore -ne 'W3VzZXJdCmRlZmF1bHQ9bnZpZGlhCg=='
+
   $kernel = ((& $wsl -d $distribution -u root -- uname -r 2>$null | Select-Object -First 1) -replace "`0", '').Trim()
   if ($kernel -notmatch '(?i)WSL2') {
     & $wsl --set-version $distribution 2
@@ -73,6 +77,10 @@ try {
   & $wsl -d $distribution -u root -- bash -lc $initialize
   if ($LASTEXITCODE) { throw "Could not initialize the nvidia demo user in $distribution." }
   & $wsl --terminate $distribution
+  if ($ubuntuConfigurationChanged) {
+    Save-Status 'rerun_required' 'Ubuntu 24.04 is installed and configured. RUN Deploy-AECDemos.cmd AGAIN.' $distribution
+    exit 0
+  }
   Save-Status 'ready' 'WSL2 and Ubuntu are initialized.' $distribution
 } catch {
   Save-Status 'error' $_.Exception.Message

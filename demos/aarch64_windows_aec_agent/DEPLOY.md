@@ -56,7 +56,9 @@ PyTorch build. The deployment script enables the WSL2 Windows features, updates 
 Ubuntu 24.04 when needed, and initializes the deterministic demo account `nvidia` / `nvidia`.
 When initial WSL2 setup requires a reboot, deployment stops with
 `RESTART WINDOWS AND RUN Deploy-AECDemos.cmd AGAIN.` Do exactly that; the second run resumes
-idempotently. This deliberately weak
+idempotently. After Ubuntu itself is installed and the `nvidia` demo user is configured, deployment
+stops once more with `RUN Deploy-AECDemos.cmd AGAIN.` A Windows reboot is not required for this
+second checkpoint; rerun the same installer to verify Ubuntu and continue. This deliberately weak
 credential is suitable only for the isolated demo appliance and must not be reused elsewhere.
 The installer copies the model weights into WSL's Linux filesystem and uses an attached WSL
 launcher on port 8188; it does not require systemd or run the incompatible x64 Windows portable build under

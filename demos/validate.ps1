@@ -66,7 +66,9 @@ foreach ($script in $windowsPowerShell) {
 $windowsDeploy = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Deploy-AECDemos.ps1')
 if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
     $windowsDeploy -notmatch 'AEC_DEMOS_RESTART_REQUIRED' -or
+    $windowsDeploy -notmatch 'AEC_DEMOS_RERUN_REQUIRED' -or
     $windowsDeploy -notmatch 'exit 3010' -or
+    $windowsDeploy -notmatch 'exit 10' -or
     $windowsDeploy -notmatch "Read-Host 'Press Enter to close this window'" -or
     $windowsDeploy -notmatch '\[switch\]\$NoPauseOnError' -or
     $windowsDeploy -notmatch 'AEC_PREREQUISITES_PASS' -or
@@ -88,7 +90,10 @@ $windowsLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_
 if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or
     $windowsLauncher -notmatch 'Deploy-AECDemos\.ps1.*-NoPauseOnError' -or
     $windowsLauncher -notmatch 'RESTART WINDOWS AND RUN Deploy-AECDemos\.cmd AGAIN' -or
+    $windowsLauncher -notmatch 'UBUNTU 24\.04 IS INSTALLED AND CONFIGURED' -or
+    $windowsLauncher -notmatch 'RUN Deploy-AECDemos\.cmd AGAIN' -or
     $windowsLauncher -notmatch 'exit /b 3010' -or
+    $windowsLauncher -notmatch 'exit /b 10' -or
     $windowsLauncher -notmatch '(?im)^\s*pause\s*$') {
   $failures.Add('Windows policy-safe launcher must invoke deployment and pause on failure')
 }
