@@ -25,6 +25,12 @@ $desktopHermes = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\apps\desktop\r
 if (-not (Test-Path $desktopHermes)) { throw 'Hermes Desktop is not installed.' }
 $hermesCli = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\venv\Scripts\hermes.exe'
 if (-not (Test-Path $hermesCli)) { throw 'Hermes CLI is not installed.' }
+$existingHermes = Get-Process Hermes -ErrorAction SilentlyContinue | Where-Object {
+  try { $_.Path -eq $desktopHermes } catch { $false }
+}
+if ($existingHermes) {
+  throw 'Hermes Desktop is already running. Close every Hermes window completely, then launch the demo shortcut again so it can start the correct isolated profile.'
+}
 
 $rhino = 'C:\Program Files\Rhino 8\System\Rhino.exe'
 if (-not (Test-Path $rhino)) { throw 'Rhino 8 is not installed.' }
@@ -180,11 +186,33 @@ if (-not (Test-RhinoMCPReady)) {
 }
 
 # Select the profile through Hermes itself. The packaged Electron executable
-# silently ignores CLI profile arguments and some releases do not inherit
-# HERMES_PROFILE when they spawn their backend.
+# silently ignores CLI profile arguments. Current Desktop releases also keep
+# their own active-profile.json preference, which wins over the legacy
+# active_profile file written by `hermes profile use`; pin both selectors.
 & $hermesCli profile use $profile
 if ($LASTEXITCODE -ne 0) { throw "Could not activate Hermes profile '$profile'." }
+$profileConfig = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\config.yaml"
+$profileEnvironment = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\.env"
+if (-not (Test-Path -LiteralPath $profileConfig)) { throw "Hermes profile config is missing: $profileConfig" }
+if (-not (Test-Path -LiteralPath $profileEnvironment) -or -not (Get-Content -LiteralPath $profileEnvironment | Where-Object { $_ -match '^NVIDIA_API_KEY=.+$' } | Select-Object -First 1)) {
+  throw "NVIDIA_API_KEY is not configured for '$profile'. Run Change_API_Key.cmd and set the key, then retry."
+}
+$profileStatus = (& $hermesCli --profile $profile status 2>&1) -join "`n"
+if ($LASTEXITCODE -ne 0 -or $profileStatus -notmatch '(?m)^\s*Provider:\s+custom:nvidia-switchyard\s*$' -or $profileStatus -notmatch '(?m)^\s*Model:\s+switchyard/openai/gpt-5\.6-sol\s*$') {
+  throw "Hermes could not resolve the NVIDIA provider and model for '$profile'. Rerun Deploy-AECDemos.cmd before launching the demo."
+}
+$desktopProfilePath = Join-Path $env:APPDATA 'Hermes\active-profile.json'
+$desktopProfileParent = Split-Path -Parent $desktopProfilePath
+New-Item -ItemType Directory -Force -Path $desktopProfileParent | Out-Null
+$desktopProfileTemporary = "$desktopProfilePath.$([guid]::NewGuid().ToString('N')).tmp"
+try {
+  $desktopProfileJson = @{ profile = $profile } | ConvertTo-Json
+  [IO.File]::WriteAllText($desktopProfileTemporary, $desktopProfileJson + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
+  Move-Item -LiteralPath $desktopProfileTemporary -Destination $desktopProfilePath -Force
+} finally {
+  if (Test-Path -LiteralPath $desktopProfileTemporary) { Remove-Item -LiteralPath $desktopProfileTemporary -Force }
+}
 $env:HERMES_PROFILE = $profile
 $env:HERMES_DESKTOP_CWD = $workspace
 Start-Process -FilePath $desktopHermes -WorkingDirectory $workspace
-Write-LaunchLog "READY demo=$Demo profile=$profile workspace=$workspace"
+Write-LaunchLog "READY demo=$Demo profile=$profile provider=custom:nvidia-switchyard model=switchyard/openai/gpt-5.6-sol desktop_profile=$desktopProfilePath workspace=$workspace"

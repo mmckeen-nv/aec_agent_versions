@@ -143,6 +143,14 @@ foreach ($profile in $profiles) {
 }
 $keyValue = $null
 
+foreach ($profile in $profiles) {
+  $resolvedStatus = (& $hermesCli --profile $profile status 2>&1) -join "`n"
+  if ($LASTEXITCODE -ne 0 -or $resolvedStatus -notmatch '(?m)^\s*Provider:\s+custom:nvidia-switchyard\s*$' -or $resolvedStatus -notmatch '(?m)^\s*Model:\s+switchyard/openai/gpt-5\.6-sol\s*$') {
+    throw "Hermes inference validation failed for '$profile': expected provider custom:nvidia-switchyard and model switchyard/openai/gpt-5.6-sol."
+  }
+  Write-Host "HERMES_INFERENCE_PROFILE_READY profile=$profile provider=custom:nvidia-switchyard model=switchyard/openai/gpt-5.6-sol"
+}
+
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
 $deploymentState = @{ schema_version = 3; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion; blender_enabled = $useBlender; blender_port = $(if ($useBlender) { 9876 } else { $null }); comfyui_enabled = $useComfyUI; comfyui_url = $(if ($useComfyUI) { 'http://127.0.0.1:8188' } else { $null }) } | ConvertTo-Json

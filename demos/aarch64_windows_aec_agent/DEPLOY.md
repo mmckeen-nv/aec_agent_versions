@@ -138,6 +138,10 @@ does not fail deployment. During a demo, the listener is valid only when port `1
 Success means Hermes uses `rhino_scene_query`, `rhino_apply_operations`, and
 `rhino_verify_transaction`. The protected golden master must remain unchanged.
 
+The shortcut refuses to continue if Hermes Desktop is already open. This is intentional: close
+Hermes completely and click the shortcut again so Desktop starts with the demo's pinned NVIDIA
+provider, model, credential file, and isolated profile.
+
 If Blender and ComfyUI were selected, run this complete visualization check in the same task:
 
 ```text
