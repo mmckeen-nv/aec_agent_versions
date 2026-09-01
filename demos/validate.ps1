@@ -110,7 +110,11 @@ foreach ($requiredContract in @('Type UNINSTALL to continue', 'Also uninstall Rh
   }
 }
 $demoLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Launch-AECDemo.ps1')
-if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or $demoLauncher -notmatch 'Press Enter to close this window') {
+if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or
+    $demoLauncher -notmatch 'Press Enter to close this window' -or
+    $demoLauncher -notmatch 'Hermes\\active-profile\.json' -or
+    $demoLauncher -notmatch 'custom:nvidia-switchyard' -or
+    $demoLauncher -notmatch 'Hermes Desktop is already running') {
   $failures.Add('Windows demo launcher must preserve and log visible failures')
 }
 if ($windowsDeploy -match 'WindowStyle Hidden') {
