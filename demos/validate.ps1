@@ -134,7 +134,7 @@ if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or
   $failures.Add('Windows demo launcher must preserve and log visible failures')
 }
 $runtimePin = (Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'hermes-aec-runtime.version')).Trim()
-if ($runtimePin -ne 'v0.8.23') { $failures.Add("Windows demo must pin HDRI-listing, auto-starting Hermes AEC runtime v0.8.23, found: $runtimePin") }
+if ($runtimePin -ne 'v0.8.24') { $failures.Add("Windows demo must pin viewport-rendering Hermes AEC runtime v0.8.24, found: $runtimePin") }
 if ($windowsDeploy -match 'WindowStyle Hidden') {
   $failures.Add('Windows desktop shortcuts must not hide launcher failures')
 }

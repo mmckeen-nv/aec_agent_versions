@@ -52,7 +52,7 @@ writer is deterministic; do not fall back to the interactive FBX exporter. Re-qu
 or ComfyUI submission. Never retry an uncertain import with a new idempotency key.
 
 For Blender-to-ComfyUI, call `blender_render_archviz` once with a new PNG path, the active working
-`.blend` path, and one stable idempotency key. This tool owns the known-good camera, target, lights,
+`.blend` path, and one stable idempotency key. This tool owns the current Blender viewport camera, lights,
 render settings, PNG render, save, and visible presentation transaction. Do not guess operation
 names or assemble the normal demo render through `blender_apply_operations`; that lower-level tool
 is only for explicitly requested custom Blender changes and publishes its complete discriminated
@@ -61,7 +61,9 @@ or `studio` for neutral material inspection. These names resolve to the checksum
 HDRI library; never invent a file path or download a loose HDRI. Call `blender_list_hdri_files`
 whenever the user asks which HDRIs, environments, or lighting presets are available; report its
 returned friendly names, intended uses, and installed state. Verify that the render receipt is
-completed and the PNG is non-empty, then call `comfyui_health` and exactly one
+completed and the PNG is non-empty. Leave `camera_source=viewport`; do not send fixed camera
+coordinates unless the user explicitly requests a numeric camera location and target. Then call
+`comfyui_health` and exactly one
 `comfyui_stylize_image` transaction. Supply a new absolute PNG output path, an architecture prompt
 that explicitly preserves geometry and camera, and one stable idempotency key. Require a completed
 receipt with `bytes`, `sha256`, and `output_path`; return that exact path. Never claim ComfyUI ran

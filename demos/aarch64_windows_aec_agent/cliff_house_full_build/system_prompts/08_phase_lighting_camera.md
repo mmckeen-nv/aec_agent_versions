@@ -20,6 +20,8 @@ project `hdr/` directory and do not execute the historical inline `bpy` examples
 `daylight` for ordinary architectural review, `golden_hour` for the brief's warm sunset/evening
 intent, or `studio` for neutral material inspection. The installer owns the HDRI path, license
 manifest, strength, rotation, and supporting sun/fill values.
+The standard render camera comes from the user's current largest Blender 3D viewport. Compose the
+shot visibly in Blender, leave `camera_source=viewport`, and do not substitute fixed coordinates.
 
 ---
 

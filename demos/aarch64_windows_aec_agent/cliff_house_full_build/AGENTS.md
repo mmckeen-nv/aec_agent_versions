@@ -25,11 +25,14 @@ selected phase and perform its read-only preflight. Do not mutate geometry befor
 1. Rhino MCP imports the source-curve model from `projects/cliff_house_02/rhino_assets/base_model.3dm`, then creates and validates the architectural model.
 2. Phase 07 transfers audited geometry and metadata to Blender.
 3. `blender_import_handoff` imports, saves, frames, and foregrounds the exact managed Blender
-   instance. For the standard hero still, `blender_render_archviz` owns the complete known-good
-   camera-target, lighting, render, save, and presentation transaction; do not guess low-level
+   instance. For the standard hero still, `blender_render_archviz` owns the complete viewport-camera,
+   lighting, render, save, and presentation transaction; do not guess low-level
    operation fields. Always select its managed `lighting_preset`: `daylight` for ordinary exterior
    review, `golden_hour` for warm/sunset/evening requests, or `studio` for neutral material review.
    Never invent an HDRI path or download an ad hoc environment image.
+   Leave `camera_source=viewport` so the render and subsequent ComfyUI input match the user's current
+   Blender 3D viewport. Never send fixed camera coordinates unless the user explicitly requests a
+   numeric camera position and target.
    When the user asks which HDRIs, environments, or lighting presets are available, call
    `blender_list_hdri_files` and report the returned friendly names, uses, and availability.
 4. `comfyui_health` and one idempotent `comfyui_stylize_image` transaction perform and retrieve the

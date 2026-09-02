@@ -83,7 +83,9 @@ Confirm and document:
 
 For the required demo hero still, call `blender_render_archviz` with a new absolute PNG path, the
 active working `.blend`, and one stable idempotency key. Do not assemble or guess camera/light/render
-operation payloads. The tool creates a camera aimed at an explicit target, adds the standard sun and
+operation payloads. By default the tool creates its render camera from the user's current largest
+Blender 3D viewport; do not provide fixed coordinates. Only use its explicit camera mode when the
+user specifically requests a numeric camera location and target. The tool adds the standard sun and
 fill, applies render settings, writes the PNG, saves the `.blend`, and presents the connected Blender
 window as one verified transaction. The animation and auxiliary-pass steps below are optional
 extended-production work and must not block the standard demo delivery.
