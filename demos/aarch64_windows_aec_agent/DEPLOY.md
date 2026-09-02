@@ -27,6 +27,8 @@ The demo always launches that managed executable and adds pinned BlenderMCP 1.8.
 removes a user's existing Blender installation. Blender deployment also installs three checksum-
 pinned 2K CC0 Poly Haven HDRIs: `daylight`, `golden_hour`, and `studio`. Hermes selects these by
 friendly preset name through `blender_render_archviz`; operators do not manage HDRI paths.
+Hermes can enumerate the live managed library with `blender_list_hdri_files` when a user asks which
+HDRIs or lighting environments are available.
 If ComfyUI is selected, deployment downloads the pinned NVIDIA build and approximately
 13 GB of FLUX.2 Klein model files; use a fast, stable connection because tradeshow internet may fail.
 

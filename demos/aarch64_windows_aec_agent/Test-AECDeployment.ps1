@@ -81,6 +81,8 @@ if (Test-Path $statePath) {
       $configText = if (Test-Path -LiteralPath $configPath) { Get-Content -Raw -LiteralPath $configPath } else { '' }
       if ($configText -match '(?m)^\s*- blender_render_archviz\s*$') { Write-Host "PASS  Deterministic Blender render registered in $profile" }
       else { Write-Host "FAIL  Deterministic Blender render missing from $profile"; $failures.Add("Blender render tool in $profile") }
+      if ($configText -match '(?m)^\s*- blender_list_hdri_files\s*$') { Write-Host "PASS  Blender HDRI listing registered in $profile" }
+      else { Write-Host "FAIL  Blender HDRI listing missing from $profile"; $failures.Add("Blender HDRI listing tool in $profile") }
       if ($configText -match '(?m)^\s*HERMES_AEC_HDRI_ROOT:\s*.+blender-hdri/polyhaven-2k\s*$') { Write-Host "PASS  Managed HDRI root registered in $profile" }
       else { Write-Host "FAIL  Managed HDRI root missing from $profile"; $failures.Add("Blender HDRI root in $profile") }
     }

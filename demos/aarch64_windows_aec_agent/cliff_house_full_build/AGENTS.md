@@ -30,6 +30,8 @@ selected phase and perform its read-only preflight. Do not mutate geometry befor
    operation fields. Always select its managed `lighting_preset`: `daylight` for ordinary exterior
    review, `golden_hour` for warm/sunset/evening requests, or `studio` for neutral material review.
    Never invent an HDRI path or download an ad hoc environment image.
+   When the user asks which HDRIs, environments, or lighting presets are available, call
+   `blender_list_hdri_files` and report the returned friendly names, uses, and availability.
 4. `comfyui_health` and one idempotent `comfyui_stylize_image` transaction perform and retrieve the
    geometry-locked architectural visualization. A Blender render alone is not a ComfyUI result.
 5. Each phase emits the receipt required by the active prompt.

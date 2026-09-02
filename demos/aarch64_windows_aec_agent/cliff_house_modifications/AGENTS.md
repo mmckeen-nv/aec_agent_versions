@@ -58,8 +58,10 @@ names or assemble the normal demo render through `blender_apply_operations`; tha
 is only for explicitly requested custom Blender changes and publishes its complete discriminated
 schema. Select `lighting_preset=daylight` by default, `golden_hour` for warm/sunset/evening requests,
 or `studio` for neutral material inspection. These names resolve to the checksum-pinned managed
-HDRI library; never invent a file path or download a loose HDRI. Verify that the render receipt is completed and the PNG is non-empty, then call
-`comfyui_health` and exactly one
+HDRI library; never invent a file path or download a loose HDRI. Call `blender_list_hdri_files`
+whenever the user asks which HDRIs, environments, or lighting presets are available; report its
+returned friendly names, intended uses, and installed state. Verify that the render receipt is
+completed and the PNG is non-empty, then call `comfyui_health` and exactly one
 `comfyui_stylize_image` transaction. Supply a new absolute PNG output path, an architecture prompt
 that explicitly preserves geometry and camera, and one stable idempotency key. Require a completed
 receipt with `bytes`, `sha256`, and `output_path`; return that exact path. Never claim ComfyUI ran
