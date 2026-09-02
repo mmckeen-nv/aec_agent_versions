@@ -19,7 +19,12 @@ credential behavior, independent connectivity test, and error guide.
 
 Blender and ComfyUI are independent opt-in deployment features. The installer asks about each.
 Answering No skips that component without failing the Rhino deployment. If Blender is selected,
-install Blender before deployment so the installer can add and auto-start pinned BlenderMCP 1.8.3.
+the installer downloads the official Blender 5.2.0 Windows ARM64 portable archive, verifies its
+SHA-256, and installs it only for the current user under `%LOCALAPPDATA%\hermes\integrations`.
+The demo always launches that managed executable and adds pinned BlenderMCP 1.8.3 to it. If Blender
+5.2.1 or another conflicting version is installed, deployment stops with
+`BLENDER_UNINSTALL_REQUIRED`; uninstall that version and rerun. The installer never silently
+removes a user's existing Blender installation.
 If ComfyUI is selected, deployment downloads the pinned NVIDIA build and approximately
 13 GB of FLUX.2 Klein model files; use a fast, stable connection because tradeshow internet may fail.
 

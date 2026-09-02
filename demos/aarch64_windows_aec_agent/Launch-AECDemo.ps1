@@ -18,6 +18,7 @@ trap {
   Read-Host 'Press Enter to close this window' | Out-Null
   exit 1
 }
+. (Join-Path $PSScriptRoot 'optional\Blender-Pin.ps1')
 Write-LaunchLog "START demo=$Demo"
 
 $state = Get-Content -Raw -LiteralPath (Join-Path $env:LOCALAPPDATA 'hermes\aec-demos\deployment.json') | ConvertFrom-Json
@@ -36,8 +37,14 @@ $rhino = 'C:\Program Files\Rhino 8\System\Rhino.exe'
 if (-not (Test-Path $rhino)) { throw 'Rhino 8 is not installed.' }
 
 if ($state.blender_enabled) {
-  $blender = Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
-  if (-not $blender) { throw 'Blender was enabled during deployment but is no longer installed.' }
+  if ($state.blender_version -ne $RequiredBlenderVersion -or -not $state.blender_executable) {
+    throw "Deployment state does not pin Blender $RequiredBlenderVersion. Rerun Deploy-AECDemos.cmd to repair it."
+  }
+  if (-not (Test-Path -LiteralPath $state.blender_executable)) { throw "Pinned Blender executable is missing: $($state.blender_executable). Rerun deployment." }
+  if ([IO.Path]::GetFullPath($state.blender_executable) -ne [IO.Path]::GetFullPath($ManagedBlenderExecutable)) { throw 'Deployment state points outside the managed per-user Blender installation. Rerun deployment.' }
+  $actualBlenderVersion = Get-BlenderVersionString -Executable $state.blender_executable
+  if ($actualBlenderVersion -ne $RequiredBlenderVersion) { throw "Pinned Blender executable reports version '$actualBlenderVersion'; version $RequiredBlenderVersion is required. Rerun deployment." }
+  $blender = Get-Item -LiteralPath $state.blender_executable
   $blenderMarkerPath = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\active-instance.json'
   $existingBlenderListener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
   if (-not $existingBlenderListener -and -not (Get-Process blender -ErrorAction SilentlyContinue)) {
@@ -65,6 +72,10 @@ if ($state.blender_enabled) {
   }
   $blenderProcess = Get-Process -Id $blenderMarker.process_id -ErrorAction SilentlyContinue
   if (-not $blenderProcess -or $blenderProcess.ProcessName -ne 'blender') { throw 'The managed Blender MCP owner is no longer running.' }
+  try { $blenderOwnerPath = $blenderProcess.Path } catch { $blenderOwnerPath = $null }
+  if (-not $blenderOwnerPath -or [IO.Path]::GetFullPath($blenderOwnerPath) -ne [IO.Path]::GetFullPath($ManagedBlenderExecutable)) {
+    throw "Blender MCP is owned by an unmanaged Blender executable: '$blenderOwnerPath'. Close all Blender windows and relaunch the demo."
+  }
   Write-LaunchLog "BLENDER_READY port=$($state.blender_port) owner=$($blenderReady.OwningProcess) marker=$blenderMarkerPath"
 }
 

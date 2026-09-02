@@ -19,7 +19,10 @@ or configure inference and MCP.
 
 1. Install [Hermes Desktop for Windows](https://hermes-agent.nousresearch.com/).
 2. Install Rhino 8 from McNeel and activate the license.
-3. Install [Blender for Windows](https://www.blender.org/download/).
+3. Do not install Blender manually. If Blender is selected, deployment installs a verified,
+   per-user Blender 5.2.0 Windows ARM64 portable build and uses only that copy. If Blender 5.2.1
+   or another version is already installed, uninstall it when deployment reports
+   `BLENDER_UNINSTALL_REQUIRED`, then rerun.
 4. Do not install ComfyUI Desktop on Windows ARM64. When ComfyUI is selected,
    `Deploy-AECDemos.ps1` enables and validates WSL2, installs Ubuntu 24.04, creates the isolated
    `nvidia` demo account, and installs the supported native CUDA 13 ComfyUI environment.

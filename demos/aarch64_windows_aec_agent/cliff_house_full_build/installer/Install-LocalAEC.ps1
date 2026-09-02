@@ -11,8 +11,7 @@ if (-not $SkipApplications) {
   if (-not (Test-Path -LiteralPath 'C:\Program Files\Rhino 8\System\Rhino.exe')) {
     throw 'Install and license Rhino 8, then rerun this check.'
   }
-  $blender = Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
-  if (-not $blender) { throw 'Install the native Windows Blender build, then rerun this check.' }
+  Write-Host 'BLENDER_MANAGED_BY_DEPLOYMENT version=5.2.0 scope=user'
 }
 
 $hermes = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\venv\Scripts\hermes.exe'

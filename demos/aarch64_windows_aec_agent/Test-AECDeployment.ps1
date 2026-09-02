@@ -2,6 +2,7 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'optional\Blender-Pin.ps1')
 $failures = [System.Collections.Generic.List[string]]::new()
 $runtimeVersion = (Get-Content -Raw -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'hermes-aec-runtime.version')).Trim()
 $desktop = [Environment]::GetFolderPath('Desktop')
@@ -54,6 +55,10 @@ $statePath = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos\deployment.json'
 if (Test-Path $statePath) {
   $state = Get-Content -Raw -LiteralPath $statePath | ConvertFrom-Json
   if ($state.blender_enabled) {
+    $pinnedBlender = if ($state.blender_executable -and (Test-Path -LiteralPath $state.blender_executable)) { Get-BlenderVersionString -Executable $state.blender_executable } else { $null }
+    $managedPathMatches = $state.blender_executable -and ([IO.Path]::GetFullPath($state.blender_executable) -eq [IO.Path]::GetFullPath($ManagedBlenderExecutable))
+    if ($state.blender_version -eq $RequiredBlenderVersion -and $pinnedBlender -eq $RequiredBlenderVersion -and $managedPathMatches) { Write-Host "PASS  Managed per-user Blender pin $RequiredBlenderVersion at $($state.blender_executable)" }
+    else { Write-Host "FAIL  Blender must be pinned to $RequiredBlenderVersion"; $failures.Add("Blender $RequiredBlenderVersion pin") }
     $blenderLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\blender-mcp.cmd'
     if (Test-Path $blenderLauncher) { Write-Host 'PASS  Opted-in BlenderMCP launcher' } else { Write-Host 'FAIL  Opted-in BlenderMCP launcher'; $failures.Add('BlenderMCP launcher') }
     foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
@@ -66,7 +71,9 @@ if (Test-Path $statePath) {
     if ($blenderListener) {
       $markerPath = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\active-instance.json'
       try { $marker = Get-Content -Raw -LiteralPath $markerPath -ErrorAction Stop | ConvertFrom-Json } catch { $marker = $null }
-      if ($marker -and $marker.process_id -eq $blenderListener.OwningProcess) { Write-Host "PASS  BlenderMCP instance ownership PID $($marker.process_id)" }
+      $listenerProcess = Get-Process -Id $blenderListener.OwningProcess -ErrorAction SilentlyContinue
+      try { $listenerPath = $listenerProcess.Path } catch { $listenerPath = $null }
+      if ($marker -and $marker.process_id -eq $blenderListener.OwningProcess -and $listenerPath -and [IO.Path]::GetFullPath($listenerPath) -eq [IO.Path]::GetFullPath($ManagedBlenderExecutable)) { Write-Host "PASS  Managed BlenderMCP instance ownership PID $($marker.process_id)" }
       else { Write-Host 'FAIL  BlenderMCP listener and managed instance marker disagree'; $failures.Add('BlenderMCP instance ownership') }
     } else { Write-Host 'WARN  BlenderMCP is installed but Blender is not running.' }
   } else { Write-Host 'SKIP  Blender was not selected during deployment.' }

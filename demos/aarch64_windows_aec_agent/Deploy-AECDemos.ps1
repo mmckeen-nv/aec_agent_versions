@@ -52,15 +52,17 @@ trap {
   exit 1
 }
 
+$blenderPinScript = Join-Path $PSScriptRoot 'optional\Blender-Pin.ps1'
+. $blenderPinScript
+
 $platformRoot = $PSScriptRoot
 $fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
 $quickRoot = Join-Path $platformRoot 'cliff_house_modifications'
 $useBlender = Resolve-OptionalChoice -Choice $Blender -Prompt 'Are you going to use Blender?'
+$installedBlender = $null
 if ($useBlender) {
-  $installedBlender = Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
-  if (-not $installedBlender) {
-    throw 'Blender was selected but is not installed. Install Blender from https://www.blender.org/download/ before deploying so BlenderMCP can be installed.'
-  }
+  Assert-NoIncompatibleBlender
+  Write-Host "BLENDER_PIN_PLANNED version=$RequiredBlenderVersion scope=user managed_root=$ManagedBlenderRoot"
 }
 Write-Host 'ComfyUI requires large downloads. A FAST and STABLE internet connection is recommended; tradeshow internet may fail.' -ForegroundColor Yellow
 $useComfyUI = Resolve-OptionalChoice -Choice $ComfyUI -Prompt 'Are you going to use ComfyUI?'
@@ -81,12 +83,18 @@ if (-not (Test-Path -LiteralPath $hermesPython) -and -not (Test-Path -LiteralPat
   $missingPrerequisites.Add('Hermes managed Python or uv runtime')
 }
 if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) { $missingPrerequisites.Add('Git for Windows') }
+if ($useBlender -and -not (Get-Command curl.exe -ErrorAction SilentlyContinue)) { $missingPrerequisites.Add('Windows curl.exe for managed Blender download') }
+if ($useBlender -and -not (Get-Command tar.exe -ErrorAction SilentlyContinue)) { $missingPrerequisites.Add('Windows tar.exe for managed Blender extraction') }
 if ($missingPrerequisites.Count) {
   throw "Prerequisite check failed before deployment changed the machine: $($missingPrerequisites -join '; ')."
 }
 Write-Host 'AEC_PREREQUISITES_PASS rhino=ready hermes=ready python=managed git=ready'
 
 & (Join-Path $platformRoot 'optional\Install-Visualization.ps1') -EnableBlender:$useBlender -EnableComfyUI:$useComfyUI
+if ($useBlender) {
+  $installedBlender = Assert-PinnedBlender
+  Write-Host "BLENDER_PIN_PASS version=$RequiredBlenderVersion executable=$($installedBlender.FullName)"
+}
 
 $runtimeVersionFile = Join-Path (Split-Path -Parent $platformRoot) 'hermes-aec-runtime.version'
 $runtimeVersion = (Get-Content -Raw -LiteralPath $runtimeVersionFile).Trim()
@@ -153,7 +161,7 @@ foreach ($profile in $profiles) {
 
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
-$deploymentState = @{ schema_version = 3; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion; blender_enabled = $useBlender; blender_port = $(if ($useBlender) { 9876 } else { $null }); comfyui_enabled = $useComfyUI; comfyui_url = $(if ($useComfyUI) { 'http://127.0.0.1:8188' } else { $null }) } | ConvertTo-Json
+$deploymentState = @{ schema_version = 4; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion; blender_enabled = $useBlender; blender_port = $(if ($useBlender) { 9876 } else { $null }); blender_version = $(if ($useBlender) { $RequiredBlenderVersion } else { $null }); blender_executable = $(if ($useBlender) { $installedBlender.FullName } else { $null }); comfyui_enabled = $useComfyUI; comfyui_url = $(if ($useComfyUI) { 'http://127.0.0.1:8188' } else { $null }) } | ConvertTo-Json
 Write-Utf8NoBom -LiteralPath (Join-Path $stateRoot 'deployment.json') -Value ($deploymentState + [Environment]::NewLine)
 
 $desktop = [Environment]::GetFolderPath('Desktop')

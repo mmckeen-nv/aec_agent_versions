@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Blender-Pin.ps1')
 $integrationRoot = Join-Path $env:LOCALAPPDATA 'hermes\integrations'
 $hermesUv = Join-Path $env:LOCALAPPDATA 'hermes\bin\uvx.exe'
 $blenderMcpVersion = '1.8.3'
@@ -15,11 +16,6 @@ $models = @(
   @{ Relative = 'text_encoders\qwen_3_4b.safetensors'; Url = 'https://huggingface.co/Comfy-Org/flux2-klein-4B/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors'; Minimum = 8000000000 },
   @{ Relative = 'vae\flux2-vae.safetensors'; Url = 'https://huggingface.co/Comfy-Org/flux2-klein-4B/resolve/main/split_files/vae/flux2-vae.safetensors'; Minimum = 300000000 }
 )
-
-function Find-Blender {
-  Get-ChildItem -LiteralPath 'C:\Program Files\Blender Foundation' -Filter blender.exe -Recurse -File -ErrorAction SilentlyContinue |
-    Sort-Object FullName -Descending | Select-Object -First 1
-}
 
 function Test-NativeWindowsArm64 {
   # RuntimeInformation describes the PowerShell process. Windows PowerShell
@@ -86,16 +82,15 @@ function Receive-LargeFile([string]$Uri, [string]$Destination, [long]$MinimumByt
 }
 
 if ($EnableBlender) {
-  $blender = Find-Blender
-  if (-not $blender) { throw 'Blender was selected but is not installed. Install Blender from https://www.blender.org/download/ and rerun deployment.' }
+  $blender = Install-PinnedBlender
   if (-not (Test-Path -LiteralPath $hermesUv)) { throw 'Hermes uvx is missing; repair Hermes Desktop.' }
-  $versionLine = (& $blender.FullName --version | Select-Object -First 1)
-  if ($versionLine -notmatch 'Blender\s+(\d+\.\d+)') { throw "Could not determine Blender version from $($blender.FullName)." }
-  $blenderVersion = $Matches[1]
+  $blenderVersion = Get-BlenderVersionString -Executable $blender.FullName
+  if ($blenderVersion -ne $RequiredBlenderVersion) { throw "Resolved Blender version '$blenderVersion' does not match required version $RequiredBlenderVersion." }
+  $blenderConfigVersion = ([version]$blenderVersion).ToString(2)
   # A fresh Blender installation does not create its per-user script tree until
   # first use. The BlenderMCP installer otherwise fails before our startup hook
   # can be deployed, so create and explicitly select the deterministic target.
-  $blenderScriptsRoot = Join-Path $env:APPDATA "Blender Foundation\Blender\$blenderVersion\scripts"
+  $blenderScriptsRoot = Join-Path $env:APPDATA "Blender Foundation\Blender\$blenderConfigVersion\scripts"
   $addonsRoot = Join-Path $blenderScriptsRoot 'addons'
   New-Item -ItemType Directory -Force -Path $addonsRoot | Out-Null
   $previousPythonUtf8 = $env:PYTHONUTF8
@@ -118,7 +113,7 @@ if ($EnableBlender) {
   New-Item -ItemType Directory -Force -Path $wrapperRoot | Out-Null
   $wrapper = "@echo off`r`nset DISABLE_TELEMETRY=true`r`nset PYTHONUTF8=1`r`n`"$hermesUv`" --from blender-mcp==$blenderMcpVersion blender-mcp %*`r`n"
   Set-Content -LiteralPath (Join-Path $wrapperRoot 'blender-mcp.cmd') -Value $wrapper -Encoding ascii
-  Write-Host "BLENDER_INTEGRATION_READY version=$blenderVersion mcp=$blenderMcpVersion addons=$addonsRoot port=9876"
+  Write-Host "BLENDER_INTEGRATION_READY version=$blenderVersion config_version=$blenderConfigVersion executable=$($blender.FullName) mcp=$blenderMcpVersion addons=$addonsRoot port=9876"
 }
 
 if ($EnableComfyUI) {

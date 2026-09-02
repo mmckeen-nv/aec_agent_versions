@@ -124,6 +124,7 @@ if (-not $RemoveRhino -and -not $Yes) {
 
 if (Get-Process Rhino -ErrorAction SilentlyContinue) { throw 'Close every Rhino window before uninstalling the demos.' }
 if (Get-Process Hermes -ErrorAction SilentlyContinue) { throw 'Close Hermes Desktop before uninstalling the demos.' }
+if (Get-Process blender -ErrorAction SilentlyContinue) { throw 'Close every Blender window before uninstalling the demos.' }
 
 $localHermes = Join-Path $env:LOCALAPPDATA 'hermes'
 $profilesRoot = Join-Path $localHermes 'profiles'
@@ -135,6 +136,11 @@ foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modificati
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'hermes-aec-runtime') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'daystrom-dml') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-mcp') -Root $integrationsRoot
+Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-5.2.0') -Root $integrationsRoot
+Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-5.2.0-download') -Root $integrationsRoot
+Get-ChildItem -LiteralPath $integrationsRoot -Directory -ErrorAction SilentlyContinue | Where-Object {
+  $_.Name -like 'blender-5.2.0-stage-*' -or $_.Name -like 'blender-5.2.0.backup.*'
+} | ForEach-Object { Remove-ManagedPath -Path $_.FullName -Root $integrationsRoot }
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'comfyui-aec') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $localHermes 'aec-demos') -Root $localHermes
 

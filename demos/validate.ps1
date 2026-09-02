@@ -28,6 +28,7 @@ foreach ($required in @(
   'aarch64_windows_aec_agent\memory\dml.yaml',
   'aarch64_windows_aec_agent\memory\seed_dml.py',
   'aarch64_windows_aec_agent\optional\Install-Visualization.ps1',
+  'aarch64_windows_aec_agent\optional\Blender-Pin.ps1',
   'aarch64_windows_aec_agent\optional\Start-AEC-ComfyUI.ps1',
   'aarch64_windows_aec_agent\optional\hermes_aec_blender_startup.py',
   'aarch64_ubuntu_aec_agent\DEPLOY.md',
@@ -80,8 +81,15 @@ if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
 foreach ($optionalContract in @('Are you going to use Blender?', 'Are you going to use ComfyUI?', 'tradeshow internet may fail', 'EnableBlender:$useBlender', 'EnableComfyUI:$useComfyUI')) {
   if ($windowsDeploy -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows optional deployment contract is missing: $optionalContract") }
 }
+foreach ($blenderStateContract in @('schema_version = 4', 'blender_version', 'blender_executable', 'BLENDER_PIN_PASS')) {
+  if ($windowsDeploy -notmatch [regex]::Escape($blenderStateContract)) { $failures.Add("Windows Blender deployment state is missing: $blenderStateContract") }
+}
+$blenderPin = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Blender-Pin.ps1')
+foreach ($pinContract in @("RequiredBlenderVersion = '5.2.0'", 'blender-5.2.0-windows-arm64.zip', 'C00B6A5D80456D9299865AB4DB730B7C93B0AF4AE77D707548F886692786D881', 'ManagedBlenderRoot', 'Install-PinnedBlender', 'Assert-NoIncompatibleBlender', 'BLENDER_UNINSTALL_REQUIRED')) {
+  if ($blenderPin -notmatch [regex]::Escape($pinContract)) { $failures.Add("Windows Blender pin is missing: $pinContract") }
+}
 $visualizationInstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Install-Visualization.ps1')
-foreach ($optionalContract in @("blenderMcpVersion = '1.8.3'", 'BLENDERMCP_ADDONS_DIR', "Join-Path `$blenderScriptsRoot 'addons'", 'install-addon --addons-dir $addonsRoot', 'v0.33.1', 'flux-2-klein-base-4b-fp8.safetensors', 'qwen_3_4b.safetensors', 'flux2-vae.safetensors', 'COMFYUI_INTEGRATION_READY')) {
+foreach ($optionalContract in @("blenderMcpVersion = '1.8.3'", 'blenderConfigVersion', 'BLENDERMCP_ADDONS_DIR', "Join-Path `$blenderScriptsRoot 'addons'", 'install-addon --addons-dir $addonsRoot', 'v0.33.1', 'flux-2-klein-base-4b-fp8.safetensors', 'qwen_3_4b.safetensors', 'flux2-vae.safetensors', 'COMFYUI_INTEGRATION_READY')) {
   if ($visualizationInstaller -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows visualization installer is missing: $optionalContract") }
 }
 $comfyController = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Start-AEC-ComfyUI.ps1')
@@ -104,7 +112,7 @@ foreach ($requiredContract in @('NVIDIA_API_KEY=', "Read-Host 'New NVIDIA API ke
   if ($apiKeyChanger -notmatch [regex]::Escape($requiredContract)) { $failures.Add("API key changer is missing: $requiredContract") }
 }
 $windowsUninstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Uninstall-AECDemos.ps1')
-foreach ($requiredContract in @('Type UNINSTALL to continue', 'Also uninstall Rhino 8', 'Find-RhinoUninstaller', 'Assert-ChildPath', 'AEC_DEMOS_UNINSTALLED')) {
+foreach ($requiredContract in @('Type UNINSTALL to continue', 'Also uninstall Rhino 8', 'Find-RhinoUninstaller', 'Assert-ChildPath', 'blender-5.2.0', 'AEC_DEMOS_UNINSTALLED')) {
   if ($windowsUninstaller -notmatch [regex]::Escape($requiredContract)) {
     $failures.Add("Windows uninstaller is missing safety contract: $requiredContract")
   }
@@ -114,7 +122,10 @@ if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or
     $demoLauncher -notmatch 'Press Enter to close this window' -or
     $demoLauncher -notmatch 'Hermes\\active-profile\.json' -or
     $demoLauncher -notmatch 'custom:nvidia-switchyard' -or
-    $demoLauncher -notmatch 'Hermes Desktop is already running') {
+    $demoLauncher -notmatch 'Hermes Desktop is already running' -or
+    $demoLauncher -notmatch 'state\.blender_executable' -or
+    $demoLauncher -notmatch 'RequiredBlenderVersion' -or
+    $demoLauncher -notmatch 'unmanaged Blender executable') {
   $failures.Add('Windows demo launcher must preserve and log visible failures')
 }
 if ($windowsDeploy -match 'WindowStyle Hidden') {
