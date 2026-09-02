@@ -56,7 +56,9 @@ For Blender-to-ComfyUI, call `blender_render_archviz` once with a new PNG path, 
 render settings, PNG render, save, and visible presentation transaction. Do not guess operation
 names or assemble the normal demo render through `blender_apply_operations`; that lower-level tool
 is only for explicitly requested custom Blender changes and publishes its complete discriminated
-schema. Verify that the render receipt is completed and the PNG is non-empty, then call
+schema. Select `lighting_preset=daylight` by default, `golden_hour` for warm/sunset/evening requests,
+or `studio` for neutral material inspection. These names resolve to the checksum-pinned managed
+HDRI library; never invent a file path or download a loose HDRI. Verify that the render receipt is completed and the PNG is non-empty, then call
 `comfyui_health` and exactly one
 `comfyui_stylize_image` transaction. Supply a new absolute PNG output path, an architecture prompt
 that explicitly preserves geometry and camera, and one stable idempotency key. Require a completed

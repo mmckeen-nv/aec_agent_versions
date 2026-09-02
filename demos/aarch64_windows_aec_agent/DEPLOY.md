@@ -24,7 +24,9 @@ SHA-256, and installs it only for the current user under `%LOCALAPPDATA%\hermes\
 The demo always launches that managed executable and adds pinned BlenderMCP 1.8.3 to it. If Blender
 5.2.1 or another conflicting version is installed, deployment stops with
 `BLENDER_UNINSTALL_REQUIRED`; uninstall that version and rerun. The installer never silently
-removes a user's existing Blender installation.
+removes a user's existing Blender installation. Blender deployment also installs three checksum-
+pinned 2K CC0 Poly Haven HDRIs: `daylight`, `golden_hour`, and `studio`. Hermes selects these by
+friendly preset name through `blender_render_archviz`; operators do not manage HDRI paths.
 If ComfyUI is selected, deployment downloads the pinned NVIDIA build and approximately
 13 GB of FLUX.2 Klein model files; use a fast, stable connection because tradeshow internet may fail.
 

@@ -16,6 +16,12 @@ $models = @(
   @{ Relative = 'text_encoders\qwen_3_4b.safetensors'; Url = 'https://huggingface.co/Comfy-Org/flux2-klein-4B/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors'; Minimum = 8000000000 },
   @{ Relative = 'vae\flux2-vae.safetensors'; Url = 'https://huggingface.co/Comfy-Org/flux2-klein-4B/resolve/main/split_files/vae/flux2-vae.safetensors'; Minimum = 300000000 }
 )
+$hdriRoot = Join-Path $integrationRoot 'blender-hdri\polyhaven-2k'
+$hdriAssets = @(
+  @{ Preset = 'daylight'; File = 'quadrangle_cloudy_2k.hdr'; Url = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/quadrangle_cloudy_2k.hdr'; Bytes = 6612646; Sha256 = '0278DD3217CD001728C0B9BA42515BBD8A0063C28F498D73ACBA0A461BD14D90'; Source = 'https://polyhaven.com/a/quadrangle_cloudy' },
+  @{ Preset = 'golden_hour'; File = 'safari_sunset_2k.hdr'; Url = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/safari_sunset_2k.hdr'; Bytes = 6639640; Sha256 = '31A938E0DF1660752C2BCA5D2F3FF4419ADEACE482BC06D68C0C7E5B32AA45AF'; Source = 'https://polyhaven.com/a/safari_sunset' },
+  @{ Preset = 'studio'; File = 'studio_small_02_2k.hdr'; Url = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/studio_small_02_2k.hdr'; Bytes = 6713781; Sha256 = '1CCB8B66F93865832C14DA8E0231971B36E09E7D284CEA752A575EDDB4B99694'; Source = 'https://polyhaven.com/a/studio_small_02' }
+)
 
 function Test-NativeWindowsArm64 {
   # RuntimeInformation describes the PowerShell process. Windows PowerShell
@@ -81,8 +87,47 @@ function Receive-LargeFile([string]$Uri, [string]$Destination, [long]$MinimumByt
   Write-Host "DOWNLOAD_READY bytes=$((Get-Item -LiteralPath $Destination).Length) path=$Destination"
 }
 
+function Receive-PinnedFile([string]$Uri, [string]$Destination, [long]$ExpectedBytes, [string]$ExpectedSha256) {
+  if (Test-Path -LiteralPath $Destination) {
+    $current = Get-Item -LiteralPath $Destination
+    $currentHash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
+    if ($current.Length -eq $ExpectedBytes -and $currentHash -eq $ExpectedSha256) {
+      Write-Host "DOWNLOAD_CURRENT sha256=$currentHash path=$Destination"
+      return
+    }
+  }
+  $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+  if (-not $curl) { throw 'Windows curl.exe is required for the managed Blender HDRI library.' }
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Destination) | Out-Null
+  $temporary = "$Destination.$([guid]::NewGuid().ToString('N')).download"
+  try {
+    & $curl.Source --location --fail --retry 5 --retry-delay 3 --output $temporary $Uri
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $temporary)) { throw "HDRI download failed: $Uri" }
+    $download = Get-Item -LiteralPath $temporary
+    $downloadHash = (Get-FileHash -LiteralPath $temporary -Algorithm SHA256).Hash
+    if ($download.Length -ne $ExpectedBytes -or $downloadHash -ne $ExpectedSha256) {
+      throw "HDRI integrity check failed for $Uri. Expected bytes=$ExpectedBytes sha256=$ExpectedSha256; received bytes=$($download.Length) sha256=$downloadHash."
+    }
+    Move-Item -LiteralPath $temporary -Destination $Destination -Force
+    Write-Host "HDRI_DOWNLOAD_READY bytes=$ExpectedBytes sha256=$ExpectedSha256 path=$Destination"
+  } finally {
+    if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
+  }
+}
+
 if ($EnableBlender) {
   $blender = Install-PinnedBlender
+  foreach ($asset in $hdriAssets) {
+    Receive-PinnedFile -Uri $asset.Url -Destination (Join-Path $hdriRoot $asset.File) -ExpectedBytes $asset.Bytes -ExpectedSha256 $asset.Sha256
+  }
+  $hdriManifest = @{
+    schema_version = 1
+    license = 'CC0-1.0'
+    provider = 'Poly Haven'
+    installed_at = (Get-Date).ToUniversalTime().ToString('o')
+    assets = $hdriAssets
+  } | ConvertTo-Json -Depth 6
+  [IO.File]::WriteAllText((Join-Path $hdriRoot 'manifest.json'), $hdriManifest + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
   if (-not (Test-Path -LiteralPath $hermesUv)) { throw 'Hermes uvx is missing; repair Hermes Desktop.' }
   $blenderVersion = Get-BlenderVersionString -Executable $blender.FullName
   if ($blenderVersion -ne $RequiredBlenderVersion) { throw "Resolved Blender version '$blenderVersion' does not match required version $RequiredBlenderVersion." }
@@ -113,7 +158,7 @@ if ($EnableBlender) {
   New-Item -ItemType Directory -Force -Path $wrapperRoot | Out-Null
   $wrapper = "@echo off`r`nset DISABLE_TELEMETRY=true`r`nset PYTHONUTF8=1`r`n`"$hermesUv`" --from blender-mcp==$blenderMcpVersion blender-mcp %*`r`n"
   Set-Content -LiteralPath (Join-Path $wrapperRoot 'blender-mcp.cmd') -Value $wrapper -Encoding ascii
-  Write-Host "BLENDER_INTEGRATION_READY version=$blenderVersion config_version=$blenderConfigVersion executable=$($blender.FullName) mcp=$blenderMcpVersion addons=$addonsRoot port=9876"
+  Write-Host "BLENDER_INTEGRATION_READY version=$blenderVersion config_version=$blenderConfigVersion executable=$($blender.FullName) mcp=$blenderMcpVersion addons=$addonsRoot hdri_presets=daylight,golden_hour,studio hdri_root=$hdriRoot port=9876"
 }
 
 if ($EnableComfyUI) {

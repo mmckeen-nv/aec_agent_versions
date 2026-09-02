@@ -56,6 +56,7 @@ $blenderPinScript = Join-Path $PSScriptRoot 'optional\Blender-Pin.ps1'
 . $blenderPinScript
 
 $platformRoot = $PSScriptRoot
+$managedHdriRoot = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-hdri\polyhaven-2k'
 $fullRoot = Join-Path $platformRoot 'cliff_house_full_build'
 $quickRoot = Join-Path $platformRoot 'cliff_house_modifications'
 $useBlender = Resolve-OptionalChoice -Choice $Blender -Prompt 'Are you going to use Blender?'
@@ -161,7 +162,7 @@ foreach ($profile in $profiles) {
 
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null
-$deploymentState = @{ schema_version = 4; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion; blender_enabled = $useBlender; blender_port = $(if ($useBlender) { 9876 } else { $null }); blender_version = $(if ($useBlender) { $RequiredBlenderVersion } else { $null }); blender_executable = $(if ($useBlender) { $installedBlender.FullName } else { $null }); comfyui_enabled = $useComfyUI; comfyui_url = $(if ($useComfyUI) { 'http://127.0.0.1:8188' } else { $null }) } | ConvertTo-Json
+$deploymentState = @{ schema_version = 5; rhino_transport = 'rhinomcp-direct'; rhino_port = $RhinoPort; legacy_rhino_port = 10500; platform_root = $platformRoot; memory = 'daystrom_dml'; hermes_aec_runtime = $runtimeVersion; blender_enabled = $useBlender; blender_port = $(if ($useBlender) { 9876 } else { $null }); blender_version = $(if ($useBlender) { $RequiredBlenderVersion } else { $null }); blender_executable = $(if ($useBlender) { $installedBlender.FullName } else { $null }); blender_hdri_root = $(if ($useBlender) { $managedHdriRoot } else { $null }); blender_hdri_presets = $(if ($useBlender) { @('daylight', 'golden_hour', 'studio') } else { @() }); comfyui_enabled = $useComfyUI; comfyui_url = $(if ($useComfyUI) { 'http://127.0.0.1:8188' } else { $null }) } | ConvertTo-Json
 Write-Utf8NoBom -LiteralPath (Join-Path $stateRoot 'deployment.json') -Value ($deploymentState + [Environment]::NewLine)
 
 $desktop = [Environment]::GetFolderPath('Desktop')

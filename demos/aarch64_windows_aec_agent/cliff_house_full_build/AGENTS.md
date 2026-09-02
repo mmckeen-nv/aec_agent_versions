@@ -27,7 +27,9 @@ selected phase and perform its read-only preflight. Do not mutate geometry befor
 3. `blender_import_handoff` imports, saves, frames, and foregrounds the exact managed Blender
    instance. For the standard hero still, `blender_render_archviz` owns the complete known-good
    camera-target, lighting, render, save, and presentation transaction; do not guess low-level
-   operation fields.
+   operation fields. Always select its managed `lighting_preset`: `daylight` for ordinary exterior
+   review, `golden_hour` for warm/sunset/evening requests, or `studio` for neutral material review.
+   Never invent an HDRI path or download an ad hoc environment image.
 4. `comfyui_health` and one idempotent `comfyui_stylize_image` transaction perform and retrieve the
    geometry-locked architectural visualization. A Blender render alone is not a ComfyUI result.
 5. Each phase emits the receipt required by the active prompt.

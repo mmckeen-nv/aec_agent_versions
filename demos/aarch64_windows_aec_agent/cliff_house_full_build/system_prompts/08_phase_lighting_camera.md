@@ -13,6 +13,14 @@ Set up and approve the HDRI lighting and hero camera. The goal is an approved
 composition and lighting mood before any Cycles materials are assigned.
 Lighting and camera are locked here — subsequent phases work within this envelope.
 
+### Managed HDRI contract (normative)
+
+Use `blender_render_archviz` and its checksum-pinned `lighting_preset`; do not locate files in a
+project `hdr/` directory and do not execute the historical inline `bpy` examples below. Select
+`daylight` for ordinary architectural review, `golden_hour` for the brief's warm sunset/evening
+intent, or `studio` for neutral material inspection. The installer owns the HDRI path, license
+manifest, strength, rotation, and supporting sun/fill values.
+
 ---
 
 ## Inputs

@@ -136,6 +136,7 @@ foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modificati
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'hermes-aec-runtime') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'daystrom-dml') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-mcp') -Root $integrationsRoot
+Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-hdri') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-5.2.0') -Root $integrationsRoot
 Remove-ManagedPath -Path (Join-Path $integrationsRoot 'blender-5.2.0-download') -Root $integrationsRoot
 Get-ChildItem -LiteralPath $integrationsRoot -Directory -ErrorAction SilentlyContinue | Where-Object {

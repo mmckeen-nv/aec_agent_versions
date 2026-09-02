@@ -71,5 +71,11 @@ def _start_blender_mcp():
     return None
 
 
-if not bpy.app.background:
-    bpy.app.timers.register(_start_blender_mcp, first_interval=4.0)
+def register():
+    if not bpy.app.background and not bpy.app.timers.is_registered(_start_blender_mcp):
+        bpy.app.timers.register(_start_blender_mcp, first_interval=4.0)
+
+
+def unregister():
+    if bpy.app.timers.is_registered(_start_blender_mcp):
+        bpy.app.timers.unregister(_start_blender_mcp)

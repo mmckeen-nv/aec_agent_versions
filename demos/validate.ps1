@@ -81,7 +81,7 @@ if ($windowsDeploy -notmatch 'AEC_DEMOS_DEPLOYMENT_FAILED' -or
 foreach ($optionalContract in @('Are you going to use Blender?', 'Are you going to use ComfyUI?', 'tradeshow internet may fail', 'EnableBlender:$useBlender', 'EnableComfyUI:$useComfyUI')) {
   if ($windowsDeploy -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows optional deployment contract is missing: $optionalContract") }
 }
-foreach ($blenderStateContract in @('schema_version = 4', 'blender_version', 'blender_executable', 'BLENDER_PIN_PASS')) {
+foreach ($blenderStateContract in @('schema_version = 5', 'blender_version', 'blender_executable', 'blender_hdri_root', 'blender_hdri_presets', 'BLENDER_PIN_PASS')) {
   if ($windowsDeploy -notmatch [regex]::Escape($blenderStateContract)) { $failures.Add("Windows Blender deployment state is missing: $blenderStateContract") }
 }
 $blenderPin = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Blender-Pin.ps1')
@@ -91,6 +91,9 @@ foreach ($pinContract in @("RequiredBlenderVersion = '5.2.0'", 'blender-5.2.0-wi
 $visualizationInstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Install-Visualization.ps1')
 foreach ($optionalContract in @("blenderMcpVersion = '1.8.3'", 'blenderConfigVersion', 'BLENDERMCP_ADDONS_DIR', "Join-Path `$blenderScriptsRoot 'addons'", 'install-addon --addons-dir $addonsRoot', 'v0.33.1', 'flux-2-klein-base-4b-fp8.safetensors', 'qwen_3_4b.safetensors', 'flux2-vae.safetensors', 'COMFYUI_INTEGRATION_READY')) {
   if ($visualizationInstaller -notmatch [regex]::Escape($optionalContract)) { $failures.Add("Windows visualization installer is missing: $optionalContract") }
+}
+foreach ($hdriContract in @('quadrangle_cloudy_2k.hdr', 'safari_sunset_2k.hdr', 'studio_small_02_2k.hdr', 'CC0-1.0', 'Receive-PinnedFile', 'HDRI_DOWNLOAD_READY')) {
+  if ($visualizationInstaller -notmatch [regex]::Escape($hdriContract)) { $failures.Add("Windows managed HDRI library is missing: $hdriContract") }
 }
 $comfyController = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\optional\Start-AEC-ComfyUI.ps1')
 foreach ($requiredContract in @('comfyui-launch.json', 'comfyui-start.lock', 'active-instance.json', 'COMFYUI_AUTOSTART_READY', 'COMFYUI_AUTOSTART_FAILED', 'WaitSeconds = 420')) {
@@ -112,7 +115,7 @@ foreach ($requiredContract in @('NVIDIA_API_KEY=', "Read-Host 'New NVIDIA API ke
   if ($apiKeyChanger -notmatch [regex]::Escape($requiredContract)) { $failures.Add("API key changer is missing: $requiredContract") }
 }
 $windowsUninstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Uninstall-AECDemos.ps1')
-foreach ($requiredContract in @('Type UNINSTALL to continue', 'Also uninstall Rhino 8', 'Find-RhinoUninstaller', 'Assert-ChildPath', 'blender-5.2.0', 'AEC_DEMOS_UNINSTALLED')) {
+foreach ($requiredContract in @('Type UNINSTALL to continue', 'Also uninstall Rhino 8', 'Find-RhinoUninstaller', 'Assert-ChildPath', 'blender-5.2.0', 'blender-hdri', 'AEC_DEMOS_UNINSTALLED')) {
   if ($windowsUninstaller -notmatch [regex]::Escape($requiredContract)) {
     $failures.Add("Windows uninstaller is missing safety contract: $requiredContract")
   }
@@ -131,7 +134,7 @@ if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or
   $failures.Add('Windows demo launcher must preserve and log visible failures')
 }
 $runtimePin = (Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'hermes-aec-runtime.version')).Trim()
-if ($runtimePin -ne 'v0.8.21') { $failures.Add("Windows demo must pin auto-start-capable Hermes AEC runtime v0.8.21, found: $runtimePin") }
+if ($runtimePin -ne 'v0.8.22') { $failures.Add("Windows demo must pin HDRI-capable, auto-starting Hermes AEC runtime v0.8.22, found: $runtimePin") }
 if ($windowsDeploy -match 'WindowStyle Hidden') {
   $failures.Add('Windows desktop shortcuts must not hide launcher failures')
 }

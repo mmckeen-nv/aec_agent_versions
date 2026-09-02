@@ -59,6 +59,21 @@ if (Test-Path $statePath) {
     $managedPathMatches = $state.blender_executable -and ([IO.Path]::GetFullPath($state.blender_executable) -eq [IO.Path]::GetFullPath($ManagedBlenderExecutable))
     if ($state.blender_version -eq $RequiredBlenderVersion -and $pinnedBlender -eq $RequiredBlenderVersion -and $managedPathMatches) { Write-Host "PASS  Managed per-user Blender pin $RequiredBlenderVersion at $($state.blender_executable)" }
     else { Write-Host "FAIL  Blender must be pinned to $RequiredBlenderVersion"; $failures.Add("Blender $RequiredBlenderVersion pin") }
+    $expectedHdris = @(
+      @{ File = 'quadrangle_cloudy_2k.hdr'; Sha256 = '0278DD3217CD001728C0B9BA42515BBD8A0063C28F498D73ACBA0A461BD14D90' },
+      @{ File = 'safari_sunset_2k.hdr'; Sha256 = '31A938E0DF1660752C2BCA5D2F3FF4419ADEACE482BC06D68C0C7E5B32AA45AF' },
+      @{ File = 'studio_small_02_2k.hdr'; Sha256 = '1CCB8B66F93865832C14DA8E0231971B36E09E7D284CEA752A575EDDB4B99694' }
+    )
+    $hdriRootMatches = $state.blender_hdri_root -and ([IO.Path]::GetFullPath($state.blender_hdri_root) -eq [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-hdri\polyhaven-2k')))
+    $hdriValid = [bool]$hdriRootMatches
+    if ($state.blender_hdri_root) {
+      foreach ($hdri in $expectedHdris) {
+        $hdriPath = Join-Path $state.blender_hdri_root $hdri.File
+        if (-not (Test-Path -LiteralPath $hdriPath) -or (Get-FileHash -LiteralPath $hdriPath -Algorithm SHA256).Hash -ne $hdri.Sha256) { $hdriValid = $false }
+      }
+    }
+    if ($hdriValid) { Write-Host 'PASS  Managed Blender HDRI presets daylight, golden_hour, studio' }
+    else { Write-Host 'FAIL  Managed Blender HDRI library'; $failures.Add('Blender HDRI library') }
     $blenderLauncher = Join-Path $env:LOCALAPPDATA 'hermes\integrations\blender-mcp\blender-mcp.cmd'
     if (Test-Path $blenderLauncher) { Write-Host 'PASS  Opted-in BlenderMCP launcher' } else { Write-Host 'FAIL  Opted-in BlenderMCP launcher'; $failures.Add('BlenderMCP launcher') }
     foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
@@ -66,6 +81,8 @@ if (Test-Path $statePath) {
       $configText = if (Test-Path -LiteralPath $configPath) { Get-Content -Raw -LiteralPath $configPath } else { '' }
       if ($configText -match '(?m)^\s*- blender_render_archviz\s*$') { Write-Host "PASS  Deterministic Blender render registered in $profile" }
       else { Write-Host "FAIL  Deterministic Blender render missing from $profile"; $failures.Add("Blender render tool in $profile") }
+      if ($configText -match '(?m)^\s*HERMES_AEC_HDRI_ROOT:\s*.+blender-hdri/polyhaven-2k\s*$') { Write-Host "PASS  Managed HDRI root registered in $profile" }
+      else { Write-Host "FAIL  Managed HDRI root missing from $profile"; $failures.Add("Blender HDRI root in $profile") }
     }
     $blenderListener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.blender_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($blenderListener) {
