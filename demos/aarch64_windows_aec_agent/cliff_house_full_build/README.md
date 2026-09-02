@@ -10,7 +10,7 @@ Install from the parent directory by following [../DEPLOY.md](../DEPLOY.md), the
 
 1. close other Rhino demo sessions;
 2. double-click **AEC Full Build**;
-3. run `AECMCPStart` in Rhino if the launcher reports that port `1999` is offline; and
+3. wait for the automatically started RhinoMCP listener on port `1999`; and
 4. tell Hermes: `Start the cliff house full build.`
 
 The shortcut selects the isolated `cliff-house-full-build-windows` profile and opens Hermes

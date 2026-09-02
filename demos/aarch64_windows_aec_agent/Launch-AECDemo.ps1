@@ -106,12 +106,16 @@ if ($state.comfyui_enabled) {
 }
 
 function Test-RhinoMCPReady {
+  param([int]$ExpectedOwnerPid = 0)
   $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $state.rhino_port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
   if (-not $listener) { return $false }
   $owner = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
-  return [bool]($owner -and $owner.ProcessName -eq 'Rhino')
+  if (-not $owner -or $owner.ProcessName -ne 'Rhino') { return $false }
+  if ($ExpectedOwnerPid -gt 0 -and $listener.OwningProcess -ne $ExpectedOwnerPid) { return $false }
+  return $true
 }
 
+$expectedRhinoPid = 0
 if ($Demo -eq 'FullBuild') {
   $profile = 'cliff-house-full-build-windows'
   $workspace = Join-Path $PSScriptRoot 'cliff_house_full_build'
@@ -144,6 +148,7 @@ if ($Demo -eq 'FullBuild') {
   if (-not $documentProcess) {
     throw "Rhino started but the '$documentStem' document window did not become ready within 90 seconds."
   }
+  $expectedRhinoPid = $documentProcess.Id
   Write-LaunchLog "RHINO_DOCUMENT_READY pid=$($documentProcess.Id) title=$($documentProcess.MainWindowTitle)"
   Start-Sleep -Seconds 3
   if (-not ('AECWinFocus' -as [type])) {
@@ -164,12 +169,12 @@ public static class AECWinFocus {
     $activated = [bool]$shell.AppActivate($documentProcess.Id)
     if (-not $activated) { $activated = [AECWinFocus]::SetForegroundWindow($documentProcess.MainWindowHandle) }
     if (-not $activated) { Start-Sleep -Milliseconds 500 }
-  } while (-not $activated -and (Get-Date) -lt $focusDeadline)
-  if (-not $activated -and -not (Test-RhinoMCPReady)) {
+  } while (-not $activated -and -not (Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid) -and (Get-Date) -lt $focusDeadline)
+  if (-not $activated -and -not (Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid)) {
     throw "Could not activate the Rhino window for '$documentStem' after 30 seconds, so AECMCPStart could not be sent safely."
   }
-  Write-LaunchLog "RHINO_ACTIVATION activated=$activated mcp_already_ready=$(Test-RhinoMCPReady)"
-  if (-not (Test-RhinoMCPReady)) {
+  Write-LaunchLog "RHINO_ACTIVATION activated=$activated mcp_already_ready=$(Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid)"
+  if (-not (Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid)) {
     $shell.SendKeys('{ESC}')
     $shell.SendKeys('AECMCPStart{ENTER}')
   }
@@ -180,7 +185,7 @@ public static class AECWinFocus {
   $stableChecks = 0
   do {
     Start-Sleep -Seconds 1
-    $listening = Test-RhinoMCPReady
+    $listening = Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid
     if ($listening) { $stableChecks++ } else { $stableChecks = 0 }
   } while ($stableChecks -lt 3 -and (Get-Date) -lt $deadline)
   if ($stableChecks -lt 3) {
@@ -188,11 +193,11 @@ public static class AECWinFocus {
   }
 }
 
-if (-not (Test-RhinoMCPReady)) {
+if (-not (Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid)) {
   $deadline = (Get-Date).AddSeconds(90)
-  do { Start-Sleep -Seconds 1 } while (-not (Test-RhinoMCPReady) -and (Get-Date) -lt $deadline)
-  if (-not (Test-RhinoMCPReady)) {
-    throw "AEC RhinoMCP is not ready on loopback port $($state.rhino_port). In Rhino run AECMCPStart, then click the shortcut again."
+  do { Start-Sleep -Seconds 1 } while (-not (Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid) -and (Get-Date) -lt $deadline)
+  if (-not (Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid)) {
+    throw "AEC RhinoMCP is not ready in the expected Rhino process on loopback port $($state.rhino_port). Close duplicate Rhino processes and retry; AECMCPStart is available only as a manual repair command."
   }
 }
 

@@ -125,9 +125,13 @@ if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or
     $demoLauncher -notmatch 'Hermes Desktop is already running' -or
     $demoLauncher -notmatch 'state\.blender_executable' -or
     $demoLauncher -notmatch 'RequiredBlenderVersion' -or
-    $demoLauncher -notmatch 'unmanaged Blender executable') {
+    $demoLauncher -notmatch 'unmanaged Blender executable' -or
+    $demoLauncher -notmatch 'ExpectedOwnerPid' -or
+    $demoLauncher -notmatch 'Close duplicate Rhino processes') {
   $failures.Add('Windows demo launcher must preserve and log visible failures')
 }
+$runtimePin = (Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'hermes-aec-runtime.version')).Trim()
+if ($runtimePin -ne 'v0.8.21') { $failures.Add("Windows demo must pin auto-start-capable Hermes AEC runtime v0.8.21, found: $runtimePin") }
 if ($windowsDeploy -match 'WindowStyle Hidden') {
   $failures.Add('Windows desktop shortcuts must not hide launcher failures')
 }

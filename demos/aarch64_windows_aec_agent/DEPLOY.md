@@ -123,9 +123,9 @@ does not fail deployment. During a demo, the listener is valid only when port `1
 ## First test: house modification
 
 1. Double-click **AEC House Modification**. Do not open Hermes separately.
-2. Wait while the launcher creates a timestamped working copy, opens it in Rhino, starts
-   `AECMCPStart`, verifies the listener, selects `cliff-house-modifications-windows`, and opens the
-   Hermes UI.
+2. Wait while the launcher creates a timestamped working copy, opens it in Rhino, verifies the
+   automatically started RhinoMCP listener, selects `cliff-house-modifications-windows`, and opens
+   the Hermes UI. Normal startup does not require foreground-window keyboard automation.
 3. Enter:
 
    ```text
@@ -165,7 +165,8 @@ the launcher must never silently target a different window.
 
 1. Close the modification run and Rhino.
 2. Double-click **AEC Full Build**.
-3. If Rhino opens without a listener, run `AECMCPStart` once in Rhino and click the shortcut again.
+3. If Rhino opens without a listener, close duplicate Rhino processes and click the shortcut again.
+   `AECMCPStart` remains available only as a manual repair command.
 4. In Hermes, enter:
 
    ```text
