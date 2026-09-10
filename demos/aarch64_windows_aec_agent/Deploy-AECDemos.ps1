@@ -4,11 +4,16 @@ param(
   [ValidateRange(8192, 1050000)][int]$ContextLength = 1000000,
   [ValidateSet('Ask', 'Yes', 'No')][string]$Blender = 'Ask',
   [ValidateSet('Ask', 'Yes', 'No')][string]$ComfyUI = 'Ask',
+  [string]$BaseUrl,
+  [string]$Model,
+  [ValidateSet('chat_completions', 'codex_responses')][string]$ApiMode = 'chat_completions',
+  [string]$KeyEnvironmentVariable = 'AEC_INFERENCE_API_KEY',
   [switch]$Force,
   [switch]$NoPauseOnError
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'inference\Inference.ps1')
 
 function Write-Utf8NoBom {
   param([Parameter(Mandatory)][string]$LiteralPath, [Parameter(Mandatory)][AllowEmptyString()][string]$Value)
@@ -50,6 +55,13 @@ trap {
     Read-Host 'Press Enter to close this window' | Out-Null
   }
   exit 1
+}
+
+$customInference = $PSBoundParameters.ContainsKey('BaseUrl') -or $PSBoundParameters.ContainsKey('Model')
+if ($customInference) {
+  if (-not $BaseUrl -or -not $Model) { throw 'Supply both -BaseUrl and -Model for custom inference.' }
+  if (-not $PSBoundParameters.ContainsKey('ContextLength')) { $ContextLength = 32768 }
+  Invoke-AECInference -Payload @{ action = 'validate'; settings = @{ provider = 'custom:aec-inference'; model = $Model; base_url = $BaseUrl; key_env = $KeyEnvironmentVariable; api_mode = $ApiMode; context_length = $ContextLength } } | Out-Null
 }
 
 $blenderPinScript = Join-Path $PSScriptRoot 'optional\Blender-Pin.ps1'
@@ -117,48 +129,54 @@ if (-not $RhinoPort) {
 $deployArguments = @{
   RhinoPort = $RhinoPort
   ContextLength = $ContextLength
+  PreserveInference = (-not $customInference)
   # These two names are owned exclusively by this package. A deployment rerun
   # refreshes them and their installers preserve the previous config as a backup.
   Force = $true
+}
+if ($customInference) {
+  $deployArguments.Provider = 'custom:aec-inference'
+  $deployArguments.Model = $Model
+  $deployArguments.BaseUrl = $BaseUrl
+  $deployArguments.KeyEnvironmentVariable = $KeyEnvironmentVariable
+  $deployArguments.ApiMode = $ApiMode
+}
+$profiles = @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')
+$previousInference = @{}
+foreach ($profile in $profiles) {
+  if (Test-Path -LiteralPath (Join-Path $hermesRoot "profiles\$profile\config.yaml")) {
+    $previousInference[$profile] = Get-AECInference -Profile $profile
+  }
 }
 Write-Host 'HERMES_PROFILE_REFRESH managed=true backups=true'
 & (Join-Path $fullRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-full-build-windows'
 & (Join-Path $quickRoot 'installer\Deploy-HermesProfile.ps1') @deployArguments -Profile 'cliff-house-modifications-windows'
 & (Join-Path $platformRoot 'runtime\Install-HermesAECRuntime.ps1') -Version $runtimeVersion -RhinoPort $RhinoPort -EnableBlender:$useBlender -EnableComfyUI:$useComfyUI -Force:$Force
 
-$profiles = @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')
-$keyValue = $env:NVIDIA_API_KEY
-if (-not $keyValue) {
-  foreach ($profile in $profiles) {
-    $envFile = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\.env"
-    if (Test-Path $envFile) {
-      $line = Get-Content -LiteralPath $envFile | Where-Object { $_ -match '^NVIDIA_API_KEY=.+' } | Select-Object -First 1
-      if ($line) { $keyValue = $line.Substring('NVIDIA_API_KEY='.Length); break }
+$promptedKeys = @{}
+foreach ($profile in $profiles) {
+  $settings = Get-AECInference -Profile $profile
+  $endpointChanged = $customInference -and $previousInference.ContainsKey($profile) -and $previousInference[$profile].base_url -ne $settings.base_url
+  if (-not $settings.has_key -or $endpointChanged) {
+    $keyScope = $settings.base_url + '|' + $settings.key_env
+    if ($promptedKeys.ContainsKey($keyScope)) { $secure = $promptedKeys[$keyScope] }
+    else {
+      $secure = Read-Host "API key for $profile ($($settings.key_env); input is hidden)" -AsSecureString
+      $promptedKeys[$keyScope] = $secure
     }
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try {
+      $keyValue = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+      Invoke-AECInference -Payload @{ action = 'key'; root = (Join-Path $hermesRoot "profiles\$profile"); key = $keyValue } | Out-Null
+    } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr); $keyValue = $null }
   }
+  Invoke-AECInference -Payload @{ action = 'ensure_key'; root = (Join-Path $hermesRoot "profiles\$profile") } | Out-Null
+  $settings = Assert-AECInference -Profile $profile -HermesCli $hermesCli
+  Write-Host "HERMES_INFERENCE_PROFILE_READY profile=$profile provider=$($settings.provider) model=$($settings.model)"
 }
-if (-not $keyValue) {
-  $secure = Read-Host 'NVIDIA API key (stored only in the two local Hermes profiles)' -AsSecureString
-  $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-  try { $keyValue = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
-  finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-  if ([string]::IsNullOrWhiteSpace($keyValue)) { throw 'An NVIDIA API key is required.' }
-}
-foreach ($profile in $profiles) {
-  $envFile = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\.env"
-  $lines = if (Test-Path $envFile) { @(Get-Content -LiteralPath $envFile | Where-Object { $_ -notmatch '^NVIDIA_API_KEY=' }) } else { @() }
-  $lines += "NVIDIA_API_KEY=$keyValue"
-  Write-Utf8NoBom -LiteralPath $envFile -Value (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
-}
-$keyValue = $null
 
-foreach ($profile in $profiles) {
-  $resolvedStatus = (& $hermesCli --profile $profile status 2>&1) -join "`n"
-  if ($LASTEXITCODE -ne 0 -or $resolvedStatus -notmatch '(?m)^\s*Provider:\s+custom:nvidia-switchyard\s*$' -or $resolvedStatus -notmatch '(?m)^\s*Model:\s+switchyard/openai/gpt-5\.6-sol\s*$') {
-    throw "Hermes inference validation failed for '$profile': expected provider custom:nvidia-switchyard and model switchyard/openai/gpt-5.6-sol."
-  }
-  Write-Host "HERMES_INFERENCE_PROFILE_READY profile=$profile provider=custom:nvidia-switchyard model=switchyard/openai/gpt-5.6-sol"
-}
+$promptedKeys.Clear()
+$secure = $null
 
 $stateRoot = Join-Path $env:LOCALAPPDATA 'hermes\aec-demos'
 New-Item -ItemType Directory -Force -Path $stateRoot | Out-Null

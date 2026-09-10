@@ -12,7 +12,7 @@ Required for both demos:
 - Hermes Desktop installed and opened at least once.
 - Git available on `PATH`; Python is supplied by Hermes or installed through its bundled `uv`.
 - Internet access for first installation and inference.
-- An NVIDIA inference API key with access to `switchyard/openai/gpt-5.6-sol`.
+- An inference endpoint and API key. NVIDIA is the default; custom OpenAI-compatible endpoints are supported.
 
 See [INFERENCE_ENDPOINT.md](INFERENCE_ENDPOINT.md) for the exact endpoint, model, API mode,
 credential behavior, independent connectivity test, and error guide.
@@ -58,7 +58,7 @@ checks Rhino, Hermes/OOBE, its managed Python bootstrap, and Git before changing
    Operators running the PowerShell script directly must first use
    `Set-ExecutionPolicy -Scope Process Bypass`. `-NoPauseOnError` is reserved for automation.
 
-4. If prompted, paste the NVIDIA API key. It is written only to the two local demo profile
+4. If prompted, paste the API key for the configured endpoint. It is written only to the two local demo profile
    environments and is never added to Git.
 5. Answer the independent Blender and ComfyUI questions. Both default to No.
 
@@ -102,7 +102,10 @@ Verify the inference provider separately before opening a demo:
 .\Test-InferenceEndpoint.cmd
 ```
 
-## Change or erase the NVIDIA API key
+## Configure inference or change the API key
+
+Run `Configure-Inference.cmd` to set a custom endpoint, model ID, and API key. See
+[INFERENCE_ENDPOINT.md](INFERENCE_ENDPOINT.md) for deployment parameters and API modes.
 
 Close Hermes, then double-click `Change_API_Key.cmd`. Choose **S** to securely enter a replacement
 key or **E** to erase the saved key from both Cliff House profiles. Key input is hidden and the key
@@ -150,7 +153,7 @@ Success means Hermes uses `rhino_scene_query`, `rhino_apply_operations`, and
 `rhino_verify_transaction`. The protected golden master must remain unchanged.
 
 The shortcut refuses to continue if Hermes Desktop is already open. This is intentional: close
-Hermes completely and click the shortcut again so Desktop starts with the demo's pinned NVIDIA
+Hermes completely and click the shortcut again so Desktop starts with the demo's configured inference
 provider, model, credential file, and isolated profile.
 
 If Blender and ComfyUI were selected, run this complete visualization check in the same task:

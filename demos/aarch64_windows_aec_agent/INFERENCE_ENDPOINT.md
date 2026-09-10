@@ -1,180 +1,101 @@
-# Configure the NVIDIA inference endpoint
+# Hermes inference configuration
 
-Both Windows demos use the same Responses-compatible endpoint:
+Both Windows demos support custom OpenAI-compatible inference servers. Configure the API base
+URL, served model ID, API mode, context length, and API key. The model must support tool calls for
+the AEC tools, and image inputs if you need visual reasoning.
 
-| Setting | Required value |
+## Change an installed deployment
+
+Close Hermes, then double-click `Configure-Inference.cmd`. It asks for the base URL, model ID,
+and a hidden API key and updates both demo profiles. Interactive defaults are Chat Completions and
+32,768 context tokens. For a server that does not require authentication, enter a nonempty
+placeholder key such as `local`.
+
+To supply the non-secret settings explicitly:
+
+```bat
+.\Configure-Inference.cmd -BaseUrl "http://localhost:8000/v1" -Model "my-served-model" -ContextLength 32768
+```
+
+For a Responses-compatible endpoint, add `-ApiMode codex_responses`. The default is
+`-ApiMode chat_completions`. Set context length to a value supported by the server and model.
+The script prompts for the key securely; do not put a plaintext key on the command line.
+PowerShell automation can pass a `SecureString` via `-ApiKey`.
+
+Use the API **base URL**, usually ending in `/v1`, including any required proxy prefix. Do not
+append `/chat/completions` or `/responses`. URLs with embedded credentials, query strings,
+fragments, or unsupported schemes are rejected. A trailing slash is normalized.
+
+## Configure during deployment
+
+```bat
+.\Deploy-AECDemos.cmd -BaseUrl "http://localhost:8000/v1" -Model "my-served-model" -ContextLength 32768
+```
+
+Both `-BaseUrl` and `-Model` are required together. Custom deployment defaults to Chat Completions
+and 32,768 context tokens. `-ApiMode codex_responses` selects Responses. Credentials use
+`AEC_INFERENCE_API_KEY` by default; `-KeyEnvironmentVariable` selects another environment variable.
+The installer prompts when a credential is missing or the saved endpoint changes and persists it in the local profile `.env`.
+An environment-provided key is also persisted so Desktop launches work outside that shell.
+
+A normal redeploy without `-BaseUrl`/`-Model` preserves each existing profile's inference settings
+and credentials while refreshing the managed AEC configuration. Use `Configure-Inference.cmd`
+to change inference without reinstalling DML, geometry tools, or the visualization stack.
+
+## NVIDIA default
+
+A fresh installation without custom settings retains the original NVIDIA configuration:
+
+| Setting | Default |
 |---|---|
 | Provider | `custom:nvidia-switchyard` |
 | Base URL | `https://inference-api.nvidia.com/v1` |
-| Responses URL | `https://inference-api.nvidia.com/v1/responses` |
 | Model | `switchyard/openai/gpt-5.6-sol` |
 | API mode | `codex_responses` |
-| Context window | `1000000` |
 | Key variable | `NVIDIA_API_KEY` |
-| Authentication | `Authorization: Bearer <NVIDIA_API_KEY>` |
-| Request content type | `application/json` |
-| Hermes service tier | `fast` |
-| Hermes reasoning effort | `medium` |
-
-Do not paste the API key into `config.yaml`, a prompt, a log, or this repository.
-
-## Complete Hermes configuration
-
-The installer generates this inference section in **both** demo profiles:
-
-```yaml
-model:
-  provider: custom:nvidia-switchyard
-  default: switchyard/openai/gpt-5.6-sol
-  base_url: https://inference-api.nvidia.com/v1
-  api_key: ${NVIDIA_API_KEY}
-  context_length: 1000000
-
-providers:
-  nvidia-switchyard:
-    name: nvidia-switchyard
-    base_url: https://inference-api.nvidia.com/v1
-    key_env: NVIDIA_API_KEY
-    default_model: switchyard/openai/gpt-5.6-sol
-    api_mode: codex_responses
-    context_length: 1000000
-
-agent:
-  service_tier: fast
-  reasoning_effort: medium
-```
-
-The profile `.env` file contains exactly the secret binding:
-
-```dotenv
-NVIDIA_API_KEY=<key issued for this endpoint>
-```
-
-Important details:
-
-- `model.provider` includes the `custom:` prefix; the provider definition beneath `providers` does
-  not.
-- `base_url` ends at `/v1`. Do not put `/responses` in `base_url`; Hermes appends the Responses
-  route because `api_mode` is `codex_responses`.
-- This endpoint uses the OpenAI **Responses** request shape, not Chat Completions.
-- The one-million-token value declares the model context available to Hermes. It is not
-  `max_output_tokens` and does not force every request to contain one million tokens.
-- There is no endpoint autodetection or fallback model in these demo profiles. These values are
-  deliberate and must remain together.
-
-## Known-good HTTP request
-
-The provider must accept this contract:
-
-```http
-POST /v1/responses HTTP/1.1
-Host: inference-api.nvidia.com
-Authorization: Bearer <NVIDIA_API_KEY>
-Content-Type: application/json
-```
-
-```json
-{
-  "model": "switchyard/openai/gpt-5.6-sol",
-  "input": "Reply with the single word READY.",
-  "max_output_tokens": 16
-}
-```
-
-An HTTP success with a Responses payload containing an `id` or `output` proves the endpoint,
-credential, model route, and request protocol are compatible. It does not prove RhinoMCP is
-running; that is a separate local check.
-
-## Recommended setup
-
-1. Obtain an NVIDIA inference API key that is authorized for
-   `switchyard/openai/gpt-5.6-sol`.
-2. Close Hermes Desktop and Rhino.
-3. Open PowerShell or Command Prompt in `demos\aarch64_windows_aec_agent`.
-4. Run:
-
-   ```bat
-   .\Deploy-AECDemos.cmd
-   ```
-
-5. When `NVIDIA API key` appears, paste the key and press Enter. PowerShell does not display the
-   pasted characters.
-6. Wait for `AEC_DEMOS_DEPLOYED`.
-
-The installer writes `NVIDIA_API_KEY` only to the local `.env` files for:
-
-- `%LOCALAPPDATA%\hermes\profiles\cliff-house-full-build-windows\.env`
-- `%LOCALAPPDATA%\hermes\profiles\cliff-house-modifications-windows\.env`
-
-The generated `config.yaml` files contain `${NVIDIA_API_KEY}`, not the secret itself.
-
-If `NVIDIA_API_KEY` already exists in the PowerShell environment, the installer uses it without
-prompting. On a repair run it reuses the key already stored in either demo profile.
-
-## Verify inference independently
-
-With Hermes closed, run:
-
-```bat
-.\Test-InferenceEndpoint.cmd
-```
-
-Expected result:
-
-```text
-INFERENCE_ENDPOINT_PASS model=switchyard/openai/gpt-5.6-sol ...
-```
-
-This sends one tiny request directly to the Responses endpoint. It does not start Rhino, modify a
-model, print the key, or print generated response text.
-
-To test the other profile explicitly:
-
-```bat
-.\Test-InferenceEndpoint.cmd -Profile cliff-house-full-build-windows
-```
-
-## Replace an expired or incorrect key
-
-Close Hermes and Rhino. Remove only the `NVIDIA_API_KEY=` line from each demo profile `.env`, then
-force a managed refresh:
-
-```bat
-.\Deploy-AECDemos.cmd -RhinoPort 1999 -Force
-.\Test-InferenceEndpoint.cmd
-```
-
-Because no old key remains, the installer prompts securely and hides the pasted characters. It
-then writes the replacement to both profiles. Do not use a permanent machine-wide environment
-variable for a demo credential.
-
-## Manual Hermes UI mapping
-
-The managed installer is the supported path. If an operator must compare the generated profile to
-Hermes UI fields, the mapping is:
-
-| Hermes field | Value |
-|---|---|
-| Provider type | Custom / OpenAI-compatible |
-| Provider name | `nvidia-switchyard` |
-| API base URL | `https://inference-api.nvidia.com/v1` |
-| API protocol | Responses / `codex_responses` |
-| Default model | `switchyard/openai/gpt-5.6-sol` |
 | Context length | `1000000` |
-| API key source | Environment variable `NVIDIA_API_KEY` |
 
-Do not use the UI to attach RhinoMCP directly. The inference provider and the typed Rhino sidecar
-are separate sections of the profile.
+Custom configuration uses `custom:aec-inference` and removes the NVIDIA-specific `fast` service
+tier. API keys remain in local `.env` files; `config.yaml` contains an environment-variable
+reference, never the supplied key. Existing config files are backed up before replacement.
+The helper uses PyYAML and python-dotenv from Hermes' managed Python environment.
 
-## Troubleshooting
+## Rotate or erase the key
 
-| Result | Meaning | Action |
-|---|---|---|
-| `401` or `403` | Missing, expired, or unauthorized key | Replace the key and rerun the forced deployment |
-| `404` | Wrong base URL, API mode, or model route | Restore the exact values in the table by rerunning the installer |
-| Model-access error | Key lacks Switchyard model entitlement | Request access to `switchyard/openai/gpt-5.6-sol` |
-| Connection or TLS failure | Network, proxy, DNS, or certificate issue | Verify HTTPS access to `inference-api.nvidia.com` |
-| Test passes but Hermes fails | Hermes has stale configuration in memory | Close all Hermes processes and relaunch from an AEC shortcut |
+Run `Change_API_Key.cmd` to set, replace, or erase the active key for each demo profile. It follows
+the configured key-variable name, including legacy `NVIDIA_API_KEY`, and preserves unrelated `.env`
+entries. Restart Hermes after changes. If you also set the key in your shell or Windows environment,
+remove it there to fully erase it: an environment credential remains a valid fallback.
 
-The inference endpoint is unrelated to RhinoMCP. Inference uses NVIDIA HTTPS; Rhino geometry tools
-use the local typed sidecar and Rhino-owned loopback listener on port `1999`.
+## Verify
+
+```bat
+.\Test-InferenceEndpoint.cmd
+```
+
+The test reads the selected profile's current endpoint, model, API mode, and credential. It posts
+a small request to `/chat/completions` or `/responses` and requires generated text before printing
+`INFERENCE_ENDPOINT_PASS`. An ID-only response, empty result, or error payload does not pass.
+The endpoint test rejects redirects instead of forwarding credentials.
+
+For the other profile:
+
+```powershell
+.\Test-InferenceEndpoint.ps1 -Profile cliff-house-full-build-windows
+```
+
+`Test-AECDeployment.cmd` and the launchers validate Hermes' resolved provider and model against
+the profile configuration. They do not require NVIDIA-specific values.
+
+| Failure | Check |
+|---|---|
+| HTTP 401/403 | Key and access to the selected model |
+| HTTP 404 | API base URL, model ID, and API mode |
+| HTTP 400 | Supported API mode, model, and request parameters |
+| No generated text | Model output, token budget, and server API compatibility |
+| Connection/timeout | Server availability, address, port, and firewall |
+| Configuration/dependency error | Complete Hermes installation; check `config.yaml` and its provider entry |
+
+This feature configures inference only. CAD, Blender, and ComfyUI still require their normal
+platform-specific installations. Linux already accepts its endpoint via `VLLM_BASE_URL`; this
+Windows guide replaces the former NVIDIA-only setup.

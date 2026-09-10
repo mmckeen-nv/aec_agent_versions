@@ -13,24 +13,7 @@ trap {
   exit 1
 }
 
-function Write-Utf8NoBomAtomic([string]$Path, [string[]]$Lines) {
-  $parent = Split-Path -Parent $Path
-  New-Item -ItemType Directory -Force -Path $parent | Out-Null
-  $temporary = "$Path.$([guid]::NewGuid().ToString('N')).tmp"
-  $swapBackup = "$Path.$([guid]::NewGuid().ToString('N')).swap"
-  try {
-    $text = if ($Lines.Count) { ($Lines -join [Environment]::NewLine) + [Environment]::NewLine } else { '' }
-    [IO.File]::WriteAllText($temporary, $text, (New-Object Text.UTF8Encoding($false)))
-    if (Test-Path -LiteralPath $Path) {
-      [IO.File]::Replace($temporary, $Path, $swapBackup)
-    } else {
-      Move-Item -LiteralPath $temporary -Destination $Path
-    }
-  } finally {
-    if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
-    if (Test-Path -LiteralPath $swapBackup) { Remove-Item -LiteralPath $swapBackup -Force }
-  }
-}
+. (Join-Path $PSScriptRoot 'inference\Inference.ps1')
 
 $profiles = @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')
 $profileRoot = Join-Path $HermesRoot 'profiles'
@@ -40,7 +23,7 @@ if ($missing.Count) {
 }
 
 if ($Action -eq 'Ask') {
-  Write-Host 'NVIDIA API key management for both Cliff House demo profiles'
+  Write-Host 'Inference API key management for both Cliff House demo profiles'
   Write-Host '  S = set or replace the key'
   Write-Host '  E = erase the saved key'
   Write-Host '  C = cancel'
@@ -53,24 +36,20 @@ if ($Action -eq 'Ask') {
 
 $keyValue = $null
 if ($Action -eq 'Set') {
-  $secure = Read-Host 'New NVIDIA API key (input is hidden)' -AsSecureString
+  $secure = Read-Host 'New Inference API key (input is hidden)' -AsSecureString
   $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
   try { $keyValue = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
   finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-  if ([string]::IsNullOrWhiteSpace($keyValue) -or $keyValue.Length -lt 8 -or $keyValue.Length -gt 1000 -or $keyValue -match '[\r\n]') {
+  if ([string]::IsNullOrWhiteSpace($keyValue) -or $keyValue -match '[\r\n]') {
     $keyValue = $null
     throw 'The API key was empty or invalid. No profile was changed.'
   }
 }
 
+# Validate both configurations before writing either credential.
+foreach ($profile in $profiles) { Get-AECInference -Profile $profile -HermesRoot $HermesRoot | Out-Null }
 foreach ($profile in $profiles) {
-  $envPath = Join-Path $profileRoot "$profile\.env"
-  $lines = if (Test-Path -LiteralPath $envPath) {
-    @(Get-Content -LiteralPath $envPath | Where-Object { $_ -notmatch '^\s*NVIDIA_API_KEY=' })
-  } else { @() }
-  if ($Action -eq 'Set') { $lines += "NVIDIA_API_KEY=$keyValue" }
-  if ($lines.Count) { Write-Utf8NoBomAtomic -Path $envPath -Lines $lines }
-  elseif (Test-Path -LiteralPath $envPath) { Remove-Item -LiteralPath $envPath -Force }
+  Invoke-AECInference -HermesRoot $HermesRoot -Payload @{ action = 'key'; root = (Join-Path $profileRoot $profile); key = $keyValue } | Out-Null
   Write-Host "AEC_API_KEY_PROFILE_UPDATED profile=$profile action=$($Action.ToLowerInvariant())"
 }
 

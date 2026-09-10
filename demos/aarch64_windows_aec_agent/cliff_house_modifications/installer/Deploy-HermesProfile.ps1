@@ -6,6 +6,8 @@ param(
   [string]$Model = 'switchyard/openai/gpt-5.6-sol',
   [string]$BaseUrl = 'https://inference-api.nvidia.com/v1',
   [string]$KeyEnvironmentVariable = 'NVIDIA_API_KEY',
+  [ValidateSet('chat_completions', 'codex_responses')][string]$ApiMode = 'codex_responses',
+  [switch]$PreserveInference,
   [ValidateRange(8192, 1050000)][int]$ContextLength = 1000000,
   [switch]$Force
 )
@@ -30,15 +32,18 @@ if ((Test-Path -LiteralPath $configPath) -and -not $Force) {
   throw "Profile config already exists: $configPath. Use -Force only after reviewing it."
 }
 
-$config = Get-Content -Raw -LiteralPath $templatePath
-$config = $config.Replace('__RHINO_PORT__', [string]$RhinoPort)
-$config = $config.Replace('nvidia-switchyard', $providerName)
-$config = $config.Replace('switchyard/openai/gpt-5.6-sol', $Model)
-$config = $config.Replace('https://inference-api.nvidia.com/v1', $BaseUrl.TrimEnd('/'))
-$config = $config.Replace('NVIDIA_API_KEY', $KeyEnvironmentVariable)
-$config = $config.Replace('context_length: 1000000', "context_length: $ContextLength")
-$config = $config.Replace('__DML_ROOT__', $dmlRoot.Replace('\', '/'))
-$config = $config.Replace('__DML_STORE__', $dmlStore.Replace('\', '/'))
+$platformRoot = Split-Path -Parent $packageRoot
+. (Join-Path $platformRoot 'inference\Inference.ps1')
+$settings = @{ provider = $Provider; model = $Model; base_url = $BaseUrl; key_env = $KeyEnvironmentVariable; api_mode = $ApiMode; context_length = $ContextLength }
+if ($PreserveInference -and (Test-Path -LiteralPath $configPath)) {
+  $existing = Get-AECInference -Profile $Profile
+  foreach ($key in @($settings.Keys)) { $settings[$key] = $existing.$key }
+}
+$rendered = Invoke-AECInference -Payload @{
+  action = 'render'; root = $profileRoot; template = $templatePath; settings = $settings
+  replacements = @{ '__RHINO_PORT__' = [string]$RhinoPort; '__DML_ROOT__' = $dmlRoot.Replace('\', '/'); '__DML_STORE__' = $dmlStore.Replace('\', '/') }
+}
+$config = $rendered.text
 
 if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House quick-modification profile')) {
   New-Item -ItemType Directory -Force -Path $profileRoot | Out-Null

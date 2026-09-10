@@ -207,16 +207,8 @@ if (-not (Test-RhinoMCPReady -ExpectedOwnerPid $expectedRhinoPid)) {
 # active_profile file written by `hermes profile use`; pin both selectors.
 & $hermesCli profile use $profile
 if ($LASTEXITCODE -ne 0) { throw "Could not activate Hermes profile '$profile'." }
-$profileConfig = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\config.yaml"
-$profileEnvironment = Join-Path $env:LOCALAPPDATA "hermes\profiles\$profile\.env"
-if (-not (Test-Path -LiteralPath $profileConfig)) { throw "Hermes profile config is missing: $profileConfig" }
-if (-not (Test-Path -LiteralPath $profileEnvironment) -or -not (Get-Content -LiteralPath $profileEnvironment | Where-Object { $_ -match '^NVIDIA_API_KEY=.+$' } | Select-Object -First 1)) {
-  throw "NVIDIA_API_KEY is not configured for '$profile'. Run Change_API_Key.cmd and set the key, then retry."
-}
-$profileStatus = (& $hermesCli --profile $profile status 2>&1) -join "`n"
-if ($LASTEXITCODE -ne 0 -or $profileStatus -notmatch '(?m)^\s*Provider:\s+custom:nvidia-switchyard\s*$' -or $profileStatus -notmatch '(?m)^\s*Model:\s+switchyard/openai/gpt-5\.6-sol\s*$') {
-  throw "Hermes could not resolve the NVIDIA provider and model for '$profile'. Rerun Deploy-AECDemos.cmd before launching the demo."
-}
+. (Join-Path $PSScriptRoot 'inference\Inference.ps1')
+$inference = Assert-AECInference -Profile $profile -HermesCli $hermesCli
 $desktopProfilePath = Join-Path $env:APPDATA 'Hermes\active-profile.json'
 $desktopProfileParent = Split-Path -Parent $desktopProfilePath
 New-Item -ItemType Directory -Force -Path $desktopProfileParent | Out-Null
@@ -231,4 +223,4 @@ try {
 $env:HERMES_PROFILE = $profile
 $env:HERMES_DESKTOP_CWD = $workspace
 Start-Process -FilePath $desktopHermes -WorkingDirectory $workspace
-Write-LaunchLog "READY demo=$Demo profile=$profile provider=custom:nvidia-switchyard model=switchyard/openai/gpt-5.6-sol desktop_profile=$desktopProfilePath workspace=$workspace"
+Write-LaunchLog "READY demo=$Demo profile=$profile provider=$($inference.provider) model=$($inference.model) desktop_profile=$desktopProfilePath workspace=$workspace"

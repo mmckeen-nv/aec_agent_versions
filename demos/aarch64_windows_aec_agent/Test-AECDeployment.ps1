@@ -158,11 +158,12 @@ if (Test-Path $statePath) {
 $hermesCli = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent\venv\Scripts\hermes.exe'
 foreach ($profile in @('cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
   if (-not (Test-Path -LiteralPath $hermesCli)) { Write-Host 'FAIL  Hermes CLI inference validation'; $failures.Add('Hermes CLI inference validation'); break }
-  $resolvedStatus = (& $hermesCli --profile $profile status 2>&1) -join "`n"
-  if ($LASTEXITCODE -eq 0 -and $resolvedStatus -match '(?m)^\s*Provider:\s+custom:nvidia-switchyard\s*$' -and $resolvedStatus -match '(?m)^\s*Model:\s+switchyard/openai/gpt-5\.6-sol\s*$') {
-    Write-Host "PASS  NVIDIA inference provider and model resolve in $profile"
-  } else {
-    Write-Host "FAIL  NVIDIA inference provider/model resolution in $profile"
+  try {
+    . (Join-Path $PSScriptRoot 'inference\Inference.ps1')
+    Assert-AECInference -Profile $profile -HermesCli $hermesCli | Out-Null
+    Write-Host "PASS  Configured inference provider and model resolve in $profile"
+  } catch {
+    Write-Host "FAIL  Inference provider/model resolution in $profile"
     $failures.Add("Inference provider/model: $profile")
   }
 }
