@@ -6,6 +6,8 @@ param(
   [string]$Model = 'switchyard/openai/gpt-5.6-sol',
   [string]$BaseUrl = 'https://inference-api.nvidia.com/v1',
   [string]$KeyEnvironmentVariable = 'NVIDIA_API_KEY',
+  [ValidateSet('chat_completions', 'codex_responses')][string]$ApiMode = 'codex_responses',
+  [switch]$PreserveInference,
   [ValidateRange(8192, 1050000)][int]$ContextLength = 1000000,
   [switch]$Force
 )
@@ -35,15 +37,18 @@ if ((Test-Path -LiteralPath $configPath) -and -not $Force) {
   throw "Profile config already exists: $configPath. Rerun with -Force only after backing it up."
 }
 
-$config = Get-Content -Raw -LiteralPath $templatePath
-$config = $config.Replace('__RHINO_PORT__', [string]$RhinoPort)
-$config = $config.Replace('nvidia-switchyard', $providerName)
-$config = $config.Replace('switchyard/openai/gpt-5.6-sol', $Model)
-$config = $config.Replace('https://inference-api.nvidia.com/v1', $BaseUrl.TrimEnd('/'))
-$config = $config.Replace('NVIDIA_API_KEY', $KeyEnvironmentVariable)
-$config = $config.Replace('context_length: 1000000', "context_length: $ContextLength")
-$config = $config.Replace('__DML_ROOT__', $dmlRoot.Replace('\', '/'))
-$config = $config.Replace('__DML_STORE__', $dmlStore.Replace('\', '/'))
+$platformRoot = Split-Path -Parent $packageRoot
+. (Join-Path $platformRoot 'inference\Inference.ps1')
+$settings = @{ provider = $Provider; model = $Model; base_url = $BaseUrl; key_env = $KeyEnvironmentVariable; api_mode = $ApiMode; context_length = $ContextLength }
+if ($PreserveInference -and (Test-Path -LiteralPath $configPath)) {
+  $existing = Get-AECInference -Profile $Profile
+  foreach ($key in @($settings.Keys)) { $settings[$key] = $existing.$key }
+}
+$rendered = Invoke-AECInference -Payload @{
+  action = 'render'; root = $profileRoot; template = $templatePath; settings = $settings
+  replacements = @{ '__RHINO_PORT__' = [string]$RhinoPort; '__DML_ROOT__' = $dmlRoot.Replace('\', '/'); '__DML_STORE__' = $dmlStore.Replace('\', '/') }
+}
+$config = $rendered.text
 
 if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House Hermes profile')) {
   New-Item -ItemType Directory -Force -Path $profileRoot | Out-Null
@@ -56,7 +61,10 @@ if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House Hermes profile')) 
   foreach ($name in @('AGENTS.md', 'hermes', 'projects', 'skills', 'system_prompts')) {
     $source = Join-Path $packageRoot $name
     $destination = Join-Path $profileRoot $name
-    Copy-Item -LiteralPath $source -Destination $destination -Recurse -Force
+    if (Test-Path -LiteralPath $source -PathType Container) {
+      New-Item -ItemType Directory -Force -Path $destination | Out-Null
+      Copy-Item -Path (Join-Path $source '*') -Destination $destination -Recurse -Force
+    } else { Copy-Item -LiteralPath $source -Destination $destination -Force }
   }
   $pluginSource = Join-Path $dmlRoot 'source\integrations\hermes\plugins\daystrom_dml'
   if (-not (Test-Path $pluginSource) -or -not (Test-Path $dmlPython)) { throw 'Daystrom DML is not installed. Run Deploy-AECDemos.ps1.' }
@@ -68,5 +76,5 @@ if ($PSCmdlet.ShouldProcess($profileRoot, 'deploy Cliff House Hermes profile')) 
     --knowledge (Join-Path $packageRoot 'memory') --project-id 'project:cliff-house-full-build-windows'
   if ($LASTEXITCODE) { throw 'Could not seed Cliff House full-build memory.' }
   Write-Host "HERMES_PROFILE_DEPLOYED profile=$Profile rhino_port=$RhinoPort"
-  Write-Host "Set $KeyEnvironmentVariable through Hermes secrets or the profile environment; no credential was written."
+  Write-Host "Set $($settings.key_env) through Hermes secrets or the profile environment; no credential was written."
 }

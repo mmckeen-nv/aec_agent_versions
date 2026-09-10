@@ -15,6 +15,10 @@ foreach ($required in @(
   'aarch64_windows_aec_agent\INFERENCE_ENDPOINT.md',
   'aarch64_windows_aec_agent\Deploy-AECDemos.cmd',
   'aarch64_windows_aec_agent\Deploy-AECDemos.ps1',
+  'aarch64_windows_aec_agent\Configure-Inference.cmd',
+  'aarch64_windows_aec_agent\Configure-Inference.ps1',
+  'aarch64_windows_aec_agent\inference\Inference.ps1',
+  'aarch64_windows_aec_agent\inference\configure.py',
   'aarch64_windows_aec_agent\Change_API_Key.cmd',
   'aarch64_windows_aec_agent\Change_API_Key.ps1',
   'aarch64_windows_aec_agent\Uninstall-AECDemos.cmd',
@@ -111,7 +115,7 @@ if ($windowsLauncher -notmatch 'ExecutionPolicy Bypass' -or
   $failures.Add('Windows policy-safe launcher must invoke deployment and pause on failure')
 }
 $apiKeyChanger = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Change_API_Key.ps1')
-foreach ($requiredContract in @('NVIDIA_API_KEY=', "Read-Host 'New NVIDIA API key (input is hidden)' -AsSecureString", 'AEC_API_KEY_SET', 'AEC_API_KEY_ERASED', 'cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
+foreach ($requiredContract in @('Invoke-AECInference', "Read-Host 'New Inference API key (input is hidden)' -AsSecureString", 'AEC_API_KEY_SET', 'AEC_API_KEY_ERASED', 'cliff-house-full-build-windows', 'cliff-house-modifications-windows')) {
   if ($apiKeyChanger -notmatch [regex]::Escape($requiredContract)) { $failures.Add("API key changer is missing: $requiredContract") }
 }
 $windowsUninstaller = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_windows_aec_agent\Uninstall-AECDemos.ps1')
@@ -124,7 +128,7 @@ $demoLauncher = Get-Content -Raw -LiteralPath (Join-Path $demosRoot 'aarch64_win
 if ($demoLauncher -notmatch 'AEC_DEMO_LAUNCH_FAILED' -or
     $demoLauncher -notmatch 'Press Enter to close this window' -or
     $demoLauncher -notmatch 'Hermes\\active-profile\.json' -or
-    $demoLauncher -notmatch 'custom:nvidia-switchyard' -or
+    $demoLauncher -notmatch 'Assert-AECInference' -or
     $demoLauncher -notmatch 'Hermes Desktop is already running' -or
     $demoLauncher -notmatch 'state\.blender_executable' -or
     $demoLauncher -notmatch 'RequiredBlenderVersion' -or
